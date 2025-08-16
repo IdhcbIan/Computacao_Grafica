@@ -68,10 +68,9 @@ def screen_to_grid(pos: Tuple[int, int]) -> Optional[GridCell]:
 # Rasterizacao do Ponto Medio (Bresenham-style)
 # ------------------------------
 
-def midpoint_line_points(a: GridCell, b: GridCell) -> List[GridCell]:
+def metodo_ponto_medio(a: GridCell, b: GridCell) -> List[GridCell]:
     """
     Calcula rasterizacao das celulas entre a e b usando o metodo do Ponto Medio.
-    (Bresenham-equivalent). Retorna uma lista de pontos. (col, row).
     """
     x0, y0 = a
     x1, y1 = b
@@ -94,7 +93,7 @@ def midpoint_line_points(a: GridCell, b: GridCell) -> List[GridCell]:
     if dx == 0 and dy == 0:
         return points
 
-    # Gentle slope: iterate over x
+    # Inclinacao suave: iteratar sobre x
     if dx >= dy:
         d = 2 * dy - dx
         incr_e = 2 * dy
@@ -109,7 +108,7 @@ def midpoint_line_points(a: GridCell, b: GridCell) -> List[GridCell]:
                 y += sy
             points.append((x, y))
     else:
-        # Steep slope: iterate over y
+        # Inclinacao agressiva: iterar sobre y
         d = 2 * dx - dy
         incr_n = 2 * dx
         incr_ne = 2 * (dx - dy)
@@ -172,8 +171,6 @@ def draw_raster_cells(surface: pygame.Surface, points: List[GridCell], steps_to_
 def draw_hud(surface: pygame.Surface, font: pygame.font.Font, a: Optional[GridCell], b: Optional[GridCell], shown: int, total: int) -> None:
     lines = [
         "Algoritmo do Ponto Médio (Rasterização de Reta)",
-        "Clique esquerdo: definir A (depois B). Se ambos definidos, novo clique redefine A.",
-        "Teclas: N = próximo passo | Espaço = rasterizar tudo | C = limpar rasterização | R = reset",
     ]
     if a is not None:
         lines.append(f"A: {a}")
@@ -218,7 +215,7 @@ class AppState:
     def recompute_raster(self) -> None:
         self.clear_raster()
         if self.endpoint_a is not None and self.endpoint_b is not None:
-            self.raster_points = midpoint_line_points(self.endpoint_a, self.endpoint_b)
+            self.raster_points = metodo_ponto_medio(self.endpoint_a, self.endpoint_b)
 
     def step(self) -> None:
         if not self.raster_points and self.endpoint_a is not None and self.endpoint_b is not None:
