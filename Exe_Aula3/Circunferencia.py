@@ -117,32 +117,33 @@ def circulo_seno_cosseno(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaN
     
     # Métricas detalhadas
     metricas = {
-        'pontos_calculados': num_pontos,
-        'pontos_unicos': len(pontos_finais),
-        'duplicatas_removidas': num_pontos - len(pontos_finais),
-        'densidade_usada': densidade,
+        'pontos_gerados': num_pontos,
         'perimetro_teorico': perimetro
     }
     
     return pontos_finais, tempo_execucao, metricas
 
 
+
+# ------------------------------
+# Algoritmo de Bresenham
+# ------------------------------
+
 def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGrade], float, Dict[str, any]]:
     """
     Desenha círculo usando algoritmo de Bresenham - método incremental.
-    Retorna lista de pontos, tempo de execução e métricas detalhadas.
     """
     tempo_inicio = time.perf_counter()
     
     cx, cy = centro
     pontos: List[CelulaNaGrade] = []
     
+    # Valores iniciais
     x = 0
     y = raio
-    d = 3 - 2 * raio
-    
-    # Contador de operações para métricas
-    operacoes_aritmeticas = 0
+    d = 1 - raio  
+    deltaE = 3
+    deltaSE = -2 * raio + 5
     
     # Função auxiliar para adicionar os 8 pontos simétricos
     def adicionar_pontos_circulo(cx: int, cy: int, x: int, y: int) -> None:
@@ -153,52 +154,57 @@ def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGr
             (cx + y, cy - x), (cx - y, cy - x)
         ])
     
+    # Chamada inicial do CirclePoints
     adicionar_pontos_circulo(cx, cy, x, y)
     
     iteracoes = 0
-    while y >= x:
-        x += 1
+    # Condição correta: x < y
+    while x < y:
         iteracoes += 1
         
-        if d > 0:
+        if d < 0:                             # Selecionamos E
+            d += deltaE
+            deltaE += 2
+            deltaSE += 2
+        else:                                 # Selecionamos SE  
+            d += deltaSE
+            deltaE += 2
+            deltaSE += 4
             y -= 1
-            d = d + 4 * (x - y) + 10
-            operacoes_aritmeticas += 4  # 4 operações aritméticas
-        else:
-            d = d + 4 * x + 6
-            operacoes_aritmeticas += 3  # 3 operações aritméticas
             
+        x += 1
+        # CirclePoints chamado APÓS as atualizações
         adicionar_pontos_circulo(cx, cy, x, y)
-    
-    # Remove duplicatas mantendo ordem
-    visto = set()
-    pontos_unicos = []
-    for ponto in pontos:
-        if ponto not in visto:
-            visto.add(ponto)
-            pontos_unicos.append(ponto)
     
     tempo_fim = time.perf_counter()
     tempo_execucao = tempo_fim - tempo_inicio
-    
-    # Métricas detalhadas
+
+
+
+    # Métricas detalhadas Para Pygame Printar!1
     metricas = {
         'iteracoes': iteracoes,
         'pontos_gerados': len(pontos),
-        'pontos_unicos': len(pontos_unicos),
-        'duplicatas_removidas': len(pontos) - len(pontos_unicos),
-        'operacoes_aritmeticas': operacoes_aritmeticas,
-        'eficiencia_octante': len(pontos_unicos) / (iteracoes * 8) if iteracoes > 0 else 0
     }
     
-    return pontos_unicos, tempo_execucao, metricas
+    return pontos, tempo_execucao, metricas
 
 
+
+# Funcao auxiliar para calcular o raio
 def calcular_raio(centro: CelulaNaGrade, ponto: CelulaNaGrade) -> int:
     """Calcula o raio baseado na distância entre centro e ponto."""
     cx, cy = centro
     px, py = ponto
     return int(math.sqrt((px - cx) ** 2 + (py - cy) ** 2) + 0.5)
+
+
+
+
+
+
+
+
 
 
 # ------------------------------
@@ -283,17 +289,11 @@ def desenhar_hud(surface: pygame.Surface, font: pygame.font.Font, centro: Option
             if alg in metricas:
                 m = metricas[alg]
                 if alg == "Seno/Cosseno":
-                    linhas.append(f"  Pontos calculados: {m['pontos_calculados']}")
-                    linhas.append(f"  Pontos únicos: {m['pontos_unicos']}")
-                    linhas.append(f"  Duplicatas: {m['duplicatas_removidas']}")
-                    linhas.append(f"  Densidade: {m['densidade_usada']:.2f}")
+                    linhas.append(f"  Pontos gerados: {m['pontos_gerados']}")
                     linhas.append(f"  Perímetro teórico: {m['perimetro_teorico']:.1f}")
                 elif alg == "Bresenham":
                     linhas.append(f"  Iterações: {m['iteracoes']}")
                     linhas.append(f"  Pontos gerados: {m['pontos_gerados']}")
-                    linhas.append(f"  Pontos únicos: {m['pontos_unicos']}")
-                    linhas.append(f"  Operações aritméticas: {m['operacoes_aritmeticas']}")
-                    linhas.append(f"  Eficiência octante: {m['eficiencia_octante']:.2f}")
             linhas.append("")
         
         if len(resultados_tempo) == 2:
@@ -307,8 +307,8 @@ def desenhar_hud(surface: pygame.Surface, font: pygame.font.Font, centro: Option
                 
                 # Comparação de qualidade
                 if "Seno/Cosseno" in metricas and "Bresenham" in metricas:
-                    seno_pontos = metricas["Seno/Cosseno"]["pontos_unicos"]
-                    bres_pontos = metricas["Bresenham"]["pontos_unicos"]
+                    seno_pontos = metricas["Seno/Cosseno"]["pontos_gerados"]
+                    bres_pontos = metricas["Bresenham"]["pontos_gerados"]
                     linhas.append(f"Qualidade (pontos): S/C={seno_pontos}, B={bres_pontos}")
 
     x = 16
