@@ -76,6 +76,7 @@ def circulo_seno_cosseno(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaN
     """
     Desenha círculo usando seno/cosseno - método trigonométrico melhorado.
     Retorna lista de pontos, tempo de execução e métricas detalhadas.
+    Agora com verificação de limites e contagem correta.
     """
     tempo_inicio = time.perf_counter()
     
@@ -87,19 +88,21 @@ def circulo_seno_cosseno(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaN
     perimetro = 2 * math.pi * raio
     # Densidade adaptativa - mais pontos para raios maiores
     densidade = max(1.0, min(3.0, raio / 5.0))
-    num_pontos = max(16, int(perimetro * densidade))
+    num_pontos_calculados = max(16, int(perimetro * densidade))
     
     # Usar conjunto para evitar duplicatas de forma mais eficiente
     pontos_set = set()
     
-    for i in range(num_pontos):
-        angulo = 2 * math.pi * i / num_pontos
+    for i in range(num_pontos_calculados):
+        angulo = 2 * math.pi * i / num_pontos_calculados
         # Melhor arredondamento para posicionamento mais preciso
         x = cx + round(raio * math.cos(angulo))
         y = cy + round(raio * math.sin(angulo))
         
-        # Adicionar ao conjunto (automaticamente evita duplicatas)
-        pontos_set.add((x, y))
+        # Verificar se o ponto está dentro dos limites da grade
+        if 0 <= x < COLUNAS_GRADE and 0 <= y < LINHAS_GRADE:
+            # Adicionar ao conjunto (automaticamente evita duplicatas)
+            pontos_set.add((x, y))
     
     # Converter conjunto para lista ordenada por ângulo
     pontos = []
@@ -115,10 +118,12 @@ def circulo_seno_cosseno(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaN
     tempo_fim = time.perf_counter()
     tempo_execucao = tempo_fim - tempo_inicio
     
-    # Métricas detalhadas
+    # Métricas detalhadas - agora com contagem correta!
     metricas = {
-        'pontos_gerados': num_pontos,
-        'perimetro_teorico': perimetro
+        'pontos_calculados': num_pontos_calculados,  # Pontos que tentamos gerar
+        'pontos_gerados': len(pontos_finais),        # Pontos únicos e válidos realmente gerados
+        'perimetro_teorico': perimetro,
+        'pontos_unicos': len(pontos_set)             # Confirmação (deve ser igual a pontos_gerados)
     }
     
     return pontos_finais, tempo_execucao, metricas
@@ -132,11 +137,12 @@ def circulo_seno_cosseno(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaN
 def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGrade], float, Dict[str, any]]:
     """
     Desenha círculo usando algoritmo de Bresenham - método incremental.
+    Agora com tratamento correto de duplicatas e verificação de limites.
     """
     tempo_inicio = time.perf_counter()
     
     cx, cy = centro
-    pontos: List[CelulaNaGrade] = []
+    pontos_set = set()  # Usar set para evitar duplicatas automaticamente
     
     # Valores iniciais
     x = 0
@@ -145,14 +151,21 @@ def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGr
     deltaE = 3
     deltaSE = -2 * raio + 5
     
-    # Função auxiliar para adicionar os 8 pontos simétricos
+    # Função auxiliar para adicionar os 8 pontos simétricos com verificação
     def adicionar_pontos_circulo(cx: int, cy: int, x: int, y: int) -> None:
-        pontos.extend([
+        # Lista dos 8 pontos simétricos possíveis
+        candidatos = [
             (cx + x, cy + y), (cx - x, cy + y),
             (cx + x, cy - y), (cx - x, cy - y),
             (cx + y, cy + x), (cx - y, cy + x),
             (cx + y, cy - x), (cx - y, cy - x)
-        ])
+        ]
+        
+        # Adicionar apenas pontos válidos (dentro dos limites da grade)
+        for ponto in candidatos:
+            px, py = ponto
+            if 0 <= px < COLUNAS_GRADE and 0 <= py < LINHAS_GRADE:
+                pontos_set.add(ponto)
     
     # Chamada inicial do CirclePoints
     adicionar_pontos_circulo(cx, cy, x, y)
@@ -176,18 +189,29 @@ def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGr
         # CirclePoints chamado APÓS as atualizações
         adicionar_pontos_circulo(cx, cy, x, y)
     
+    # Converter set para lista ordenada (para visualização consistente)
+    pontos = []
+    for ponto in pontos_set:
+        px, py = ponto
+        # Calcular ângulo para ordenação
+        angulo = math.atan2(py - cy, px - cx)
+        pontos.append((ponto, angulo))
+    
+    # Ordenar por ângulo para melhor visualização
+    pontos.sort(key=lambda item: item[1])
+    pontos_finais = [ponto for ponto, _ in pontos]
+    
     tempo_fim = time.perf_counter()
     tempo_execucao = tempo_fim - tempo_inicio
 
-
-
-    # Métricas detalhadas Para Pygame Printar!1
+    # Métricas detalhadas - agora com contagem correta!
     metricas = {
         'iteracoes': iteracoes,
-        'pontos_gerados': len(pontos),
+        'pontos_gerados': len(pontos_finais),  # Contagem real sem duplicatas
+        'pontos_unicos': len(pontos_set),      # Confirmação
     }
     
-    return pontos, tempo_execucao, metricas
+    return pontos_finais, tempo_execucao, metricas
 
 
 
@@ -289,11 +313,9 @@ def desenhar_hud(surface: pygame.Surface, font: pygame.font.Font, centro: Option
             if alg in metricas:
                 m = metricas[alg]
                 if alg == "Seno/Cosseno":
-                    linhas.append(f"  Pontos gerados: {m['pontos_gerados']}")
-                    linhas.append(f"  Perímetro teórico: {m['perimetro_teorico']:.1f}")
+                    linhas.append(f"  Pontos únicos: {m['pontos_gerados']}")
                 elif alg == "Bresenham":
-                    linhas.append(f"  Iterações: {m['iteracoes']}")
-                    linhas.append(f"  Pontos gerados: {m['pontos_gerados']}")
+                    linhas.append(f"  Pontos únicos: {m['pontos_gerados']}")
             linhas.append("")
         
         if len(resultados_tempo) == 2:
