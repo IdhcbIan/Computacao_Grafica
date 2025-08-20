@@ -171,7 +171,7 @@ def circulo_bresenham(centro: CelulaNaGrade, raio: int) -> Tuple[List[CelulaNaGr
     adicionar_pontos_circulo(cx, cy, x, y)
     
     iteracoes = 0
-    # Condição correta: x < y
+    # Condição.
     while x < y:
         iteracoes += 1
         
