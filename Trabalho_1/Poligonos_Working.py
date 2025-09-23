@@ -59,7 +59,7 @@ CelulaNaGrade = Tuple[int, int]
 def grade_para_tela(celula: CelulaNaGrade) -> Tuple[int, int]:
     col, linha = celula
     x = MARGEM + col * TAMANHO_CELULA
-    y = MARGEM + linha * TAMANHO_CELULA
+    y = ALTURA_JANELA - (MARGEM - linha * TAMANHO_CELULA)
     return x, y
 
 def centro_celula(celula: CelulaNaGrade) -> Tuple[int, int]:
@@ -79,7 +79,7 @@ def tela_para_grade(pos: Tuple[int, int]) -> Optional[CelulaNaGrade]:
     if x_rel < 0 or y_rel < 0:
         return None
     col = x_rel // TAMANHO_CELULA
-    linha = y_rel // TAMANHO_CELULA
+    linha = LINHAS_GRADE - (y_rel // TAMANHO_CELULA)
     if 0 <= col < COLUNAS_GRADE and 0 <= linha < LINHAS_GRADE:
         return int(col), int(linha)
     return None
@@ -254,7 +254,7 @@ def desenhar_celulas_poligono(surface, pontos, passos_mostrados):
 def desenhar_interceptos(surface, interceptos, passo_atual):
     if passo_atual >= len(interceptos): return
     y, xs = interceptos[passo_atual]
-    y_tela = MARGEM + y * TAMANHO_CELULA
+    y_tela = ALTURA_JANELA - (MARGEM - y * TAMANHO_CELULA)
     pygame.draw.line(surface, (255, 0, 0), (MARGEM, y_tela + TAMANHO_CELULA // 2), (LARGURA_JANELA - MARGEM, y_tela + TAMANHO_CELULA // 2), 2)
     for x in xs:
         x_int = int(x)

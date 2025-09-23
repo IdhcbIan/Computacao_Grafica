@@ -142,33 +142,58 @@ def construir_tabela_arestas(vertices: List[CelulaNaGrade]):
 
 def algoritmo_preenchimento_scanline(ET, ymin, ymax):
     """
-    Algoritmo de preenchimento por varredura (Scanline Fill Algorithm).
-    Implementa o Algoritmo 4.3 da apostila.
+    Algoritmo de preenchimento por varredura (Scanline Fill Algorithm) - BOTTOM-UP.
+    Implementa o Algoritmo 4.3 da apostila modificado para escaneamento de baixo para cima.
     
     Passos:
-    1. Obtém a menor coordenada y armazenada na ET
+    1. Obtém a maior coordenada y armazenada na ET (começando de baixo)
     2. Inicializa AET como vazia
     3. Repita até que ET e AET estejam vazias:
-       3.1. Transfere do cesto y na ET para AET as arestas cujo ymin = y
-       3.2. Retira os lados que possuem y = ymax
+       3.1. Transfere do cesto y na ET para AET as arestas cujo ymax = y (invertido)
+       3.2. Retira os lados que possuem y = ymin (invertido) 
        3.3. Desenhe os pixels do bloco na linha de varredura y usando pares de coordenadas x da AET
-       3.4. Incremente y de 1
-       3.5. Para cada aresta não vertical que permanece na AET, atualiza x para o novo y
+       3.4. Decrementa y de 1 (escaneamento bottom-up)
+       3.5. Para cada aresta não vertical que permanece na AET, atualiza x para o novo y (direção invertida)
        3.6. Como o passo anterior pode ter desordenado a AET, reordena a AET
     """
+    
+    # Reconstrói ET para bottom-up: indexa por ymax em vez de ymin
+    ET_bottomup = {}
+    for y_entry in ET:
+        for edge in ET[y_entry]:
+            ymax_edge = edge.ymax
+            ymin_edge = y_entry
+            
+            # Para bottom-up, começamos em ymax com x_final
+            if edge.inv_slope != 0:
+                x_final = edge.x + edge.inv_slope * (ymax_edge - ymin_edge)
+            else:
+                x_final = edge.x
+                
+            # Cria nova entrada invertida
+            edge_invertida = EdgeEntry(ymin_edge, x_final, -edge.inv_slope)
+            
+            if ymax_edge not in ET_bottomup:
+                ET_bottomup[ymax_edge] = []
+            ET_bottomup[ymax_edge].append(edge_invertida)
+    
+    # Ordena arestas por x em cada bucket da ET invertida
+    for y in ET_bottomup:
+        ET_bottomup[y].sort(key=lambda e: e.x)
+    
     AET = []  # Active Edge Table (inicialmente vazia)
-    y = ymin  # Linha de varredura atual
+    y = ymax  # Linha de varredura atual (começando de baixo)
     resultados_scanline = []
     
     # Repita até que ET e AET estejam vazias
-    while y <= ymax or AET:
-        # 3.1. Transfere do cesto y na ET para AET as arestas cujo ymin = y
-        if y in ET:
-            AET.extend(ET[y])
+    while y >= ymin or AET:
+        # 3.1. Transfere do cesto y na ET para AET as arestas cujo ymax = y
+        if y in ET_bottomup:
+            AET.extend(ET_bottomup[y])
             # Remove as arestas transferidas da ET (opcional, para economia de memória)
-            del ET[y]
+            del ET_bottomup[y]
         
-        # 3.2. Retira os lados que possuem y = ymax (não mais envolvidos nesta linha)
+        # 3.2. Retira os lados que possuem y = ymin (não mais envolvidos nesta linha)
         AET = [aresta for aresta in AET if aresta.ymax != y]
         
         # 3.6. Reordena AET por coordenada x
@@ -178,15 +203,14 @@ def algoritmo_preenchimento_scanline(ET, ymin, ymax):
         interceptos_x = [aresta.x for aresta in AET]
         resultados_scanline.append((y, interceptos_x.copy()))
         
-        # 3.4. Incremente y de 1 (próxima linha de varredura)
-        y += 1
+        # 3.4. Decrementa y de 1 (próxima linha de varredura - bottom-up)
+        y -= 1
         
         # 3.5. Para cada aresta não vertical que permanece na AET, atualiza x para o novo y
         for aresta in AET:
-            aresta.x += aresta.inv_slope
+            aresta.x += aresta.inv_slope  # inv_slope já foi invertido na construção
     
     return resultados_scanline
-
 
 def main():
     pygame.init()

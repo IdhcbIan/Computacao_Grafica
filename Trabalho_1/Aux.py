@@ -280,6 +280,6 @@ class EstadoApp:
                 if i + 1 < len(xs):
                     x_start = int(math.ceil(xs[i]))
                     x_end = int(math.floor(xs[i + 1]))
-                    for x in range(x_start, x_end + 1):
+                    for x in range(x_start, x_end):
                         self.pontos_raster.append((x, y))
             self.scanline_step += 1
