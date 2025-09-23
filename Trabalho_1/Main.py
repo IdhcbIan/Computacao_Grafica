@@ -38,30 +38,44 @@ from Aux import (
 )
 
 
-"""
-    Funcoes para verificar se dois segmentos se interceptam.
-"""
-
-def segmentos_se_interceptam(p1, q1, p2, q2):
-    def orientacao(p, q, r):
-        val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
-        if val == 0: return 0
-        return 1 if val > 0 else 2
-    def ponto_no_segmento(p, q, r):
-        return (q[0] <= max(p[0], r[0]) and q[0] >= min(p[0], r[0]) and
-                q[1] <= max(p[1], r[1]) and q[1] >= min(p[1], r[1]))
-    o1, o2 = orientacao(p1, q1, p2), orientacao(p1, q1, q2)
-    o3, o4 = orientacao(p2, q2, p1), orientacao(p2, q2, q1)
-    if o1 != o2 and o3 != o4: return True
-    if o1 == 0 and ponto_no_segmento(p1, p2, q1): return True
-    if o2 == 0 and ponto_no_segmento(p1, q2, q1): return True
-    if o3 == 0 and ponto_no_segmento(p2, p1, q2): return True
-    if o4 == 0 and ponto_no_segmento(p2, q1, q2): return True
-    return False
 
 """
     Funcoes para verificar se um poligono e valido.
 """
+def checar_vertices_alinhados(vertices: List[CelulaNaGrade]) -> bool:
+    """
+    Verifica se os vértices estão alinhados (colineares).
+    Retorna True se todos os vértices estão em linha reta (horizontal, vertical ou diagonal).
+    """
+    
+    # Caso Reta-Horizontal: todos os vértices têm a mesma coordenada y
+    if all(v[1] == vertices[0][1] for v in vertices):
+        return True
+    
+    # Caso Reta-Vertical: todos os vértices têm a mesma coordenada x
+    if all(v[0] == vertices[0][0] for v in vertices):
+        return True
+    
+    # Caso Reta-Obliqua: verificar se todos os vértices têm a mesma inclinação
+    # Usando o primeiro e segundo vértice como referência
+    x1, y1 = vertices[0]
+    x2, y2 = vertices[1]
+    
+    
+    # Para cada vértice subsequente, verificar se está na mesma linha
+    for i in range(2, len(vertices)):
+        x3, y3 = vertices[i]
+        
+        # Usar produto cruzado para verificar colinearidade
+        # Se (x2-x1)(y3-y1) - (y2-y1)(x3-x1) == 0, então os pontos são colineares
+        produto_cruzado = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
+        
+        if produto_cruzado != 0:
+            return False  # Não são colineares
+    
+    return True  # Todos os vértices são colineares 
+
+
 
 def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
     """
@@ -69,8 +83,6 @@ def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
     Aceita qualquer polígono fechado, incluindo com auto-interseções,
     pois o algoritmo de preenchimento pode lidar com eles.
     """
-    if len(vertices) < 3:
-        return False, "Polígono precisa ter pelo menos 3 vértices"
     
     # Remove vértices duplicados consecutivos
     vertices_limpos = []
@@ -78,12 +90,13 @@ def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
         if i == 0 or vertice != vertices[i-1]:
             vertices_limpos.append(vertice)
     
-    if len(vertices_limpos) < 3:
-        return False, "Polígono precisa ter pelo menos 3 vértices únicos"
-    
     # Verifica se o polígono está fechado
     if vertices_limpos[0] != vertices_limpos[-1]:
         return False, "Polígono não está fechado (último vértice deve ser igual ao primeiro)"
+    
+    # Verifica se os vértices não estão todos alinhados (formando uma linha reta)
+    if checar_vertices_alinhados(vertices_limpos):
+        return False, "Polígono inválido: todos os vértices estão alinhados (formam uma linha reta)"
     
     # Qualquer polígono fechado é válido para preenchimento
     # (incluindo auto-interseções, pois o algoritmo scanline pode lidar com eles)
@@ -240,7 +253,17 @@ def main():
                     else:
                         estado.avancar_scanline()
                 elif evento.key == pygame.K_RETURN:
-                    estado.validar_e_desenhar_poligono()
+                    # Só permite validação com pelo menos 3 vértices distintos
+                    vertices_distintos = []
+                    for vertice in estado.vertices:
+                        if vertice not in vertices_distintos:
+                            vertices_distintos.append(vertice)
+                    
+                    if len(vertices_distintos) >= 3:
+                        estado.validar_e_desenhar_poligono()
+                    else:
+                        estado.bloqueado_por_poucos_vertices = True
+                        print(f"Polígono bloqueado: apenas {len(vertices_distintos)} vértices distintos encontrados (mínimo: 3). Use SPACE para limpar.")
                 elif evento.key == pygame.K_BACKSPACE:
                     estado.remover_ultimo_vertice()
             elif evento.type == pygame.MOUSEBUTTONDOWN:
@@ -261,7 +284,7 @@ def main():
             desenhar_celulas_poligono(tela, estado.pontos_raster, len(estado.pontos_raster))
         if estado.interceptos_scanline and estado.scanline_step < len(estado.interceptos_scanline):
             desenhar_interceptos(tela, estado.interceptos_scanline, estado.scanline_step)
-        desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster))
+        desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster), estado.bloqueado_por_poucos_vertices)
         pygame.display.flip()
         relogio.tick(FPS)
 

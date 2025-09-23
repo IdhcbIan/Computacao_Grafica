@@ -162,7 +162,7 @@ def desenhar_interceptos(surface, interceptos, passo_atual):
         x_tela = MARGEM + x_int * TAMANHO_CELULA + TAMANHO_CELULA // 2
         pygame.draw.circle(surface, (0, 255, 0), (x_tela, y_tela + TAMANHO_CELULA // 2), 5)
 
-def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos):
+def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos, bloqueado_por_poucos_vertices=False):
     linhas = [
         "=== Algoritmo de Preenchimento de Polígonos ===",
         "Click: Adicionar vértice",
@@ -170,11 +170,24 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
         "",
     ]
     num_vertices = len(vertices)
-    linhas.append(f"Vértices: {num_vertices}")
+    
+    # Conta vértices distintos
+    vertices_distintos = []
+    for vertice in vertices:
+        if vertice not in vertices_distintos:
+            vertices_distintos.append(vertice)
+    num_vertices_distintos = len(vertices_distintos)
+    
+    linhas.append(f"Vértices: {num_vertices} (distintos: {num_vertices_distintos})")
     if num_vertices > 0:
         linhas.append(f"Último vértice: {vertices[-1]}")
+    
     if poligono_validado:
         linhas.append("Status: Polígono validado ✓ - Pronto para preenchimento")
+    elif bloqueado_por_poucos_vertices:
+        linhas.append("Status: BLOQUEADO - Poucos vértices distintos! Use SPACE para limpar")
+    elif num_vertices_distintos < 3:
+        linhas.append(f"Status: Adicione mais vértices distintos (atual: {num_vertices_distintos}/3)")
     elif num_vertices >= 4 and vertices[0] == vertices[-1]:
         linhas.append("Status: Polígono fechado! Pressione ENTER para validar")
     elif num_vertices >= 3:
@@ -201,6 +214,7 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
         if "===" in texto: cor = (0, 100, 200)
         elif "Status:" in texto:
             if "validado" in texto: cor = (0, 150, 0)
+            elif "BLOQUEADO" in texto: cor = (200, 0, 0)
             elif "ENTER" in texto: cor = (200, 100, 0)
             else: cor = (150, 150, 0)
         elif "válido" in texto.lower():
@@ -219,14 +233,16 @@ class EstadoApp:
         self.resultado_validacao: str = ""
         self.interceptos_scanline: List[Tuple[int, List[float]]] = []
         self.scanline_step: int = 0
+        self.bloqueado_por_poucos_vertices: bool = False
 
     def limpar_raster(self):
         self.pontos_raster = []
         self.interceptos_scanline = []
         self.scanline_step = 0
+        self.bloqueado_por_poucos_vertices = False
 
     def adicionar_vertice(self, celula: CelulaNaGrade):
-        if not self.poligono_validado:
+        if not self.poligono_validado and not self.bloqueado_por_poucos_vertices:
             vertice_restrito = restringir_celula(celula)
             if len(self.vertices) >= 3 and vertice_restrito == self.vertices[0]:
                 self.vertices.append(vertice_restrito)
@@ -234,6 +250,8 @@ class EstadoApp:
                 return
             if not self.vertices or self.vertices[-1] != vertice_restrito:
                 self.vertices.append(vertice_restrito)
+        elif self.bloqueado_por_poucos_vertices:
+            print("Não é possível adicionar vértices: polígono bloqueado por ter poucos vértices. Pressione SPACE para limpar.")
 
     def validar_e_desenhar_poligono(self):
         if len(self.vertices) >= 3:
