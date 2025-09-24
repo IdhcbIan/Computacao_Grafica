@@ -152,6 +152,19 @@ def desenhar_celulas_poligono(surface, pontos, passos_mostrados):
         rect = pygame.Rect(x + 2, y + 2, TAMANHO_CELULA - 4, TAMANHO_CELULA - 4)
         surface.fill(CELULA_POLIGONO, rect)
 
+def desenhar_poligonos_finalizados(surface, poligonos_finalizados):
+    """Desenha todos os polígonos já finalizados/validados"""
+    for vertices_poligono, pontos_raster in poligonos_finalizados:
+        # Desenha os vértices do polígono finalizado
+        desenhar_vertices(surface, vertices_poligono, True)  # True = poligono_validado
+        
+        # Desenha as linhas do polígono finalizado
+        desenhar_linhas_preview(surface, vertices_poligono, True)  # True = poligono_validado
+        
+        # Desenha o preenchimento se houver pontos raster
+        if pontos_raster:
+            desenhar_celulas_poligono(surface, pontos_raster, len(pontos_raster))
+
 def desenhar_interceptos(surface, interceptos, passo_atual):
     if passo_atual >= len(interceptos): return
     y, xs = interceptos[passo_atual]
@@ -162,13 +175,22 @@ def desenhar_interceptos(surface, interceptos, passo_atual):
         x_tela = MARGEM + x_int * TAMANHO_CELULA + TAMANHO_CELULA // 2
         pygame.draw.circle(surface, (0, 255, 0), (x_tela, y_tela + TAMANHO_CELULA // 2), 5)
 
-def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos, bloqueado_por_poucos_vertices=False):
+def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos, bloqueado_por_poucos_vertices=False, poligonos_finalizados=None):
+    # Verifica se scanline está disponível
+    tem_poligonos_para_scanline = poligono_validado or (poligonos_finalizados and len(poligonos_finalizados) > 0)
+    scanline_texto = "N: Scanline GLOBAL" if tem_poligonos_para_scanline else "N: Scanline (indisponível)"
+    
     linhas = [
         "=== Algoritmo de Preenchimento de Polígonos ===",
         "Click: Adicionar vértice",
-        "ENTER: Validar | SPACE: Limpar | BACKSPACE: Remover | ESC: Sair | N: Scanline",
+        f"ENTER: Validar | SPACE: Limpar TUDO | BACKSPACE: Remover | ESC: Sair | {scanline_texto}",
         "",
     ]
+    
+    # Adicionar informações sobre polígonos finalizados
+    if poligonos_finalizados is not None and len(poligonos_finalizados) > 0:
+        linhas.append(f"Polígonos finalizados: {len(poligonos_finalizados)}")
+        linhas.append("")
     num_vertices = len(vertices)
     
     # Conta vértices distintos
@@ -183,7 +205,7 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
         linhas.append(f"Último vértice: {vertices[-1]}")
     
     if poligono_validado:
-        linhas.append("Status: Polígono validado ✓ - Pronto para preenchimento")
+        linhas.append("Status: Polígono validado ✓ - Use 'N' para scanline ou clique para novo polígono")
     elif bloqueado_por_poucos_vertices:
         linhas.append("Status: BLOQUEADO - Poucos vértices distintos! Use SPACE para limpar")
     elif num_vertices_distintos < 3:
@@ -227,6 +249,7 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
 
 class EstadoApp:
     def __init__(self):
+        # Polígono atual sendo desenhado
         self.vertices: List[CelulaNaGrade] = []
         self.poligono_validado: bool = False
         self.pontos_raster: List[CelulaNaGrade] = []
@@ -234,6 +257,9 @@ class EstadoApp:
         self.interceptos_scanline: List[Tuple[int, List[float]]] = []
         self.scanline_step: int = 0
         self.bloqueado_por_poucos_vertices: bool = False
+        
+        # Lista de polígonos finalizados (cada um com seus vértices e pontos raster)
+        self.poligonos_finalizados: List[Tuple[List[CelulaNaGrade], List[CelulaNaGrade]]] = []
 
     def limpar_raster(self):
         self.pontos_raster = []
@@ -242,7 +268,17 @@ class EstadoApp:
         self.bloqueado_por_poucos_vertices = False
 
     def adicionar_vertice(self, celula: CelulaNaGrade):
-        if not self.poligono_validado and not self.bloqueado_por_poucos_vertices:
+        # Se há um polígono validado e vamos começar um novo, finaliza o anterior
+        if self.poligono_validado and len(self.vertices) > 0:
+            print("Finalizando polígono anterior e começando novo...")
+            self.finalizar_poligono()
+        
+        if not self.poligono_validado:
+            # Desbloqueia automaticamente quando tentar adicionar vértice
+            if self.bloqueado_por_poucos_vertices:
+                self.bloqueado_por_poucos_vertices = False
+                print("Desbloqueado! Continuando a desenhar polígono...")
+            
             vertice_restrito = restringir_celula(celula)
             if len(self.vertices) >= 3 and vertice_restrito == self.vertices[0]:
                 self.vertices.append(vertice_restrito)
@@ -250,8 +286,6 @@ class EstadoApp:
                 return
             if not self.vertices or self.vertices[-1] != vertice_restrito:
                 self.vertices.append(vertice_restrito)
-        elif self.bloqueado_por_poucos_vertices:
-            print("Não é possível adicionar vértices: polígono bloqueado por ter poucos vértices. Pressione SPACE para limpar.")
 
     def validar_e_desenhar_poligono(self):
         if len(self.vertices) >= 3:
@@ -271,9 +305,39 @@ class EstadoApp:
                 self.interceptos_scanline = []
                 self.scanline_step = 0
                 self.pontos_raster = []
+                print("Polígono validado! Agora você pode usar 'N' para scanline ou começar um novo polígono.")
         else:
             self.resultado_validacao = "Adicione pelo menos 3 vértices antes de validar"
             print(f"\n{self.resultado_validacao}\n")
+
+    def finalizar_poligono(self):
+        """Finaliza o polígono atual e prepara para desenhar um novo"""
+        if self.poligono_validado:
+            # Salva o polígono atual na lista de finalizados (com pontos raster vazios inicialmente)
+            self.poligonos_finalizados.append((self.vertices.copy(), []))
+            
+            # Reset do estado para um novo polígono
+            self.vertices = []
+            self.poligono_validado = False
+            self.pontos_raster = []
+            self.resultado_validacao = ""
+            self.interceptos_scanline = []
+            self.scanline_step = 0
+            self.bloqueado_por_poucos_vertices = False
+            
+            print(f"Novo polígono pronto! Total de polígonos finalizados: {len(self.poligonos_finalizados)}")
+    
+    def limpar_tudo(self):
+        """Limpa polígono atual e todos os finalizados"""
+        self.vertices = []
+        self.poligono_validado = False
+        self.pontos_raster = []
+        self.resultado_validacao = ""
+        self.interceptos_scanline = []
+        self.scanline_step = 0
+        self.bloqueado_por_poucos_vertices = False
+        self.poligonos_finalizados = []
+        print("Todos os polígonos foram limpos!")
 
     def remover_ultimo_vertice(self):
         if self.vertices and not self.poligono_validado:
@@ -281,16 +345,55 @@ class EstadoApp:
             self.limpar_raster()
 
     def iniciar_preenchimento_scanline(self):
-        if self.poligono_validado and not self.interceptos_scanline:
+        if not self.interceptos_scanline:
             # Import the algorithm functions from Main.py to avoid circular imports
             from Main import construir_tabela_arestas, algoritmo_preenchimento_scanline
-            ET, ymin, ymax = construir_tabela_arestas(self.vertices)
-            self.interceptos_scanline = algoritmo_preenchimento_scanline(ET, ymin, ymax)
+            
+            # Coleta todos os polígonos (finalizados + atual se validado)
+            todos_poligonos = []
+            
+            # Adiciona polígonos finalizados
+            for vertices_poligono, _ in self.poligonos_finalizados:
+                todos_poligonos.append(vertices_poligono)
+            
+            # Adiciona polígono atual se validado
+            if self.poligono_validado and len(self.vertices) > 0:
+                todos_poligonos.append(self.vertices)
+            
+            if not todos_poligonos:
+                print("Nenhum polígono validado encontrado para scanline.")
+                return
+            
+            # Constrói tabela de arestas global e encontra limites globais
+            ET_global = {}
+            ymin_global = float('inf')
+            ymax_global = float('-inf')
+            
+            for vertices in todos_poligonos:
+                ET, ymin, ymax = construir_tabela_arestas(vertices)
+                
+                # Atualiza limites globais
+                ymin_global = min(ymin_global, ymin)
+                ymax_global = max(ymax_global, ymax)
+                
+                # Combina ET deste polígono com ET global
+                for y_bucket in ET:
+                    if y_bucket not in ET_global:
+                        ET_global[y_bucket] = []
+                    ET_global[y_bucket].extend(ET[y_bucket])
+            
+            # Ordena arestas por x em cada bucket da ET global
+            for y in ET_global:
+                ET_global[y].sort(key=lambda e: e.x)
+            
+            self.interceptos_scanline = algoritmo_preenchimento_scanline(ET_global, ymin_global, ymax_global)
             self.scanline_step = 0
-            print(f"Algoritmo de preenchimento iniciado com {len(self.interceptos_scanline)} linhas de varredura.")
+            print(f"Algoritmo de preenchimento iniciado para {len(todos_poligonos)} polígono(s) com {len(self.interceptos_scanline)} linhas de varredura.")
+            print(f"Limites Y: {ymin_global} até {ymax_global}")
 
     def avancar_scanline(self):
-        if not self.poligono_validado:
+        # Permite scanline se há polígono atual validado OU polígonos finalizados
+        if not self.poligono_validado and not self.poligonos_finalizados:
             return
         if self.scanline_step < len(self.interceptos_scanline):
             y, xs = self.interceptos_scanline[self.scanline_step]

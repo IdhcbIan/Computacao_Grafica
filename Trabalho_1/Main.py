@@ -31,7 +31,7 @@ from typing import List, Optional, Tuple
 from Aux import (
     EstadoApp, EdgeEntry, grade_para_tela, centro_celula, restringir_celula, tela_para_grade,
     desenhar_tabuleiro, desenhar_vertices, desenhar_linhas_preview, 
-    desenhar_celulas_poligono, desenhar_interceptos, desenhar_hud,
+    desenhar_celulas_poligono, desenhar_interceptos, desenhar_hud, desenhar_poligonos_finalizados,
     COLUNAS_GRADE, LINHAS_GRADE, TAMANHO_CELULA, MARGEM, LARGURA_JANELA, ALTURA_JANELA, FPS,
     BRANCO, PRETO, LINHA_GRADE, XADREZ_A, XADREZ_B, VERTICE_ATUAL, VERTICE_ANTERIOR,
     LINHA_TEMPORARIA, LINHA_PREVIEW, CELULA_POLIGONO, VERTICE_PRIMEIRO, TEXTO_HUD, CelulaNaGrade
@@ -243,13 +243,14 @@ def main():
                 if evento.key == pygame.K_ESCAPE:
                     executando = False
                 elif evento.key == pygame.K_SPACE:
-                    estado.vertices = []
-                    estado.poligono_validado = False
-                    estado.resultado_validacao = ""
-                    estado.limpar_raster()
+                    estado.limpar_tudo()
                 elif evento.key == pygame.K_n:
+                    # Permite iniciar scanline se há polígono validado atual OU polígonos finalizados
                     if not estado.interceptos_scanline:
-                        estado.iniciar_preenchimento_scanline()
+                        if estado.poligono_validado or estado.poligonos_finalizados:
+                            estado.iniciar_preenchimento_scanline()
+                        else:
+                            print("Nenhum polígono validado encontrado. Valide um polígono primeiro!")
                     else:
                         estado.avancar_scanline()
                 elif evento.key == pygame.K_RETURN:
@@ -274,6 +275,12 @@ def main():
 
         tela.fill(BRANCO)
         desenhar_tabuleiro(tela)
+        
+        # Desenhar todos os polígonos finalizados primeiro (para ficar atrás)
+        if estado.poligonos_finalizados:
+            desenhar_poligonos_finalizados(tela, estado.poligonos_finalizados)
+        
+        # Desenhar o polígono atual sendo desenhado (para ficar na frente)
         if estado.vertices:
             desenhar_vertices(tela, estado.vertices, estado.poligono_validado)
             desenhar_linhas_preview(tela, estado.vertices, estado.poligono_validado)
@@ -284,7 +291,7 @@ def main():
             desenhar_celulas_poligono(tela, estado.pontos_raster, len(estado.pontos_raster))
         if estado.interceptos_scanline and estado.scanline_step < len(estado.interceptos_scanline):
             desenhar_interceptos(tela, estado.interceptos_scanline, estado.scanline_step)
-        desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster), estado.bloqueado_por_poucos_vertices)
+        desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster), estado.bloqueado_por_poucos_vertices, estado.poligonos_finalizados)
         pygame.display.flip()
         relogio.tick(FPS)
 
