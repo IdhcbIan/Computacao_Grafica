@@ -5,9 +5,10 @@ from typing import List, Optional, Tuple
 
 # Import constants from Main.py
 # Note: This will create a circular import, so we'll define constants here instead
-COLUNAS_GRADE, LINHAS_GRADE = 60, 60
+COLUNAS_GRADE, LINHAS_GRADE = 30, 30
 TAMANHO_CELULA, MARGEM = 20, 32
-LARGURA_JANELA = COLUNAS_GRADE * TAMANHO_CELULA + MARGEM * 2
+MARGEM_ESQ = MARGEM * 13
+LARGURA_JANELA = COLUNAS_GRADE * TAMANHO_CELULA + MARGEM + MARGEM_ESQ
 ALTURA_JANELA = LINHAS_GRADE * TAMANHO_CELULA + MARGEM * 2
 FPS = 60
 
@@ -25,6 +26,21 @@ VERTICE_PRIMEIRO = (255, 50, 50)
 TEXTO_HUD = (20, 20, 20)
 CelulaNaGrade = Tuple[int, int]
 
+BOTOES = [
+        {"texto": "Limpar Tela",
+         "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 2*MARGEM, 120, 40),
+         "acao": "limpar"},
+        {"texto": "Scanline",
+         "rect": pygame.Rect(MARGEM + 180, ALTURA_JANELA - 5*MARGEM, 120, 40),
+         "acao": "scanline"},
+        {"texto": "Validar",
+         "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 5*MARGEM, 120, 40),
+         "acao": "validar"},
+        {"texto": "Remover Último",
+         "rect": pygame.Rect(MARGEM + 180, ALTURA_JANELA - 2*MARGEM, 180, 40),
+         "acao": "remover"},
+    ]
+
 #------// Funcoes //------
 
 """
@@ -33,7 +49,7 @@ CelulaNaGrade = Tuple[int, int]
 
 def grade_para_tela(celula: CelulaNaGrade) -> Tuple[int, int]:
     col, linha = celula
-    x = MARGEM + col * TAMANHO_CELULA
+    x = MARGEM_ESQ + col * TAMANHO_CELULA
     y = MARGEM + linha * TAMANHO_CELULA
     return x, y
 
@@ -49,7 +65,7 @@ def restringir_celula(celula: CelulaNaGrade) -> CelulaNaGrade:
 
 def tela_para_grade(pos: Tuple[int, int]) -> Optional[CelulaNaGrade]:
     x, y = pos
-    x_rel = x - MARGEM
+    x_rel = x - MARGEM_ESQ
     y_rel = y - MARGEM
     if x_rel < 0 or y_rel < 0:
         return None
@@ -75,44 +91,38 @@ class EdgeEntry:
         self.ymax = ymax
         self.x = x  # Coordenada x atual
         self.inv_slope = inv_slope  # 1/m para incremento de x
-    
+
     def __str__(self):
         return f"Edge(ymax={self.ymax}, x={self.x:.2f}, inv_slope={self.inv_slope:.2f})"
-
-"""
-    Algoritmo de preenchimento de polígonos por varredura (Scanline Fill).
-    
-    Estruturas de dados utilizadas:
-    
-    1. Edge Table (ET): Tabela de arestas indexada por ymin
-       - Cada entrada y contém lista de arestas que começam em y
-       - Ordenada por x (coordenada x inicial)
-    
-    2. Active Edge Table (AET): Lista de arestas ativas na linha de varredura atual
-       - Contém apenas arestas que interceptam a scanline atual
-       - Ordenada por coordenada x
-       - Atualizada a cada linha varrida
-"""
-
-
 
 """
     Funcoes de desenho(PyGame).
 """
 
 def desenhar_tabuleiro(surface):
+    # Quadriculado
     for linha in range(LINHAS_GRADE):
         for col in range(COLUNAS_GRADE):
             x, y = grade_para_tela((col, linha))
             rect = pygame.Rect(x, y, TAMANHO_CELULA, TAMANHO_CELULA)
             cor = XADREZ_A if (linha + col) % 2 == 0 else XADREZ_B
             surface.fill(cor, rect)
+    # Linhas verticais
     for c in range(COLUNAS_GRADE + 1):
-        x = MARGEM + c * TAMANHO_CELULA
+        x = MARGEM_ESQ + c * TAMANHO_CELULA
         pygame.draw.line(surface, LINHA_GRADE, (x, MARGEM), (x, MARGEM + LINHAS_GRADE * TAMANHO_CELULA), 1)
+    # Linhas horizontais
     for r in range(LINHAS_GRADE + 1):
         y = MARGEM + r * TAMANHO_CELULA
-        pygame.draw.line(surface, LINHA_GRADE, (MARGEM, y), (MARGEM + COLUNAS_GRADE * TAMANHO_CELULA, y), 1)
+        pygame.draw.line(surface, LINHA_GRADE, (MARGEM_ESQ, y), (MARGEM_ESQ + COLUNAS_GRADE * TAMANHO_CELULA, y), 1)
+
+def desenhar_botoes(surface,fonte,botoes):
+    for botao in botoes:
+        pygame.draw.rect(surface, (200,200,200) , botao["rect"], border_radius=6)
+        pygame.draw.rect(surface, (50,50,50), botao["rect"], width=2, border_radius=6)
+        texto_render = fonte.render(botao["texto"], True, PRETO)
+        texto_rect = texto_render.get_rect(center=botao["rect"].center)
+        surface.blit(texto_render, texto_rect)
 
 def desenhar_vertices(surface, vertices, poligono_validado):
     if not vertices: return
@@ -121,6 +131,7 @@ def desenhar_vertices(surface, vertices, poligono_validado):
         vx, vy = centro_celula(vertice)
         if poligono_fechado_bool and i == len(vertices) - 1:
             continue
+        # Vértices com cores diferentes
         if i == 0:
             pygame.draw.circle(surface, VERTICE_PRIMEIRO, (vx, vy), TAMANHO_CELULA // 3)
             if len(vertices) >= 3 and not poligono_fechado_bool:
@@ -157,10 +168,10 @@ def desenhar_poligonos_finalizados(surface, poligonos_finalizados):
     for vertices_poligono, pontos_raster in poligonos_finalizados:
         # Desenha os vértices do polígono finalizado
         desenhar_vertices(surface, vertices_poligono, True)  # True = poligono_validado
-        
+
         # Desenha as linhas do polígono finalizado
         desenhar_linhas_preview(surface, vertices_poligono, True)  # True = poligono_validado
-        
+
         # Desenha o preenchimento se houver pontos raster
         if pontos_raster:
             desenhar_celulas_poligono(surface, pontos_raster, len(pontos_raster))
@@ -169,53 +180,57 @@ def desenhar_interceptos(surface, interceptos, passo_atual):
     if passo_atual >= len(interceptos): return
     y, xs = interceptos[passo_atual]
     y_tela = MARGEM + y * TAMANHO_CELULA
-    pygame.draw.line(surface, (255, 0, 0), (MARGEM, y_tela + TAMANHO_CELULA // 2), (LARGURA_JANELA - MARGEM, y_tela + TAMANHO_CELULA // 2), 2)
+    pygame.draw.line(surface, (255, 0, 0), (MARGEM_ESQ, y_tela + TAMANHO_CELULA // 2), (LARGURA_JANELA - MARGEM, y_tela + TAMANHO_CELULA // 2), 2)
     for x in xs:
         x_int = int(x)
-        x_tela = MARGEM + x_int * TAMANHO_CELULA + TAMANHO_CELULA // 2
+        x_tela = MARGEM_ESQ + x_int * TAMANHO_CELULA + TAMANHO_CELULA // 2
         pygame.draw.circle(surface, (0, 255, 0), (x_tela, y_tela + TAMANHO_CELULA // 2), 5)
 
 def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos, bloqueado_por_poucos_vertices=False, poligonos_finalizados=None):
     # Verifica se scanline está disponível
     tem_poligonos_para_scanline = poligono_validado or (poligonos_finalizados and len(poligonos_finalizados) > 0)
     scanline_texto = "N: Scanline GLOBAL" if tem_poligonos_para_scanline else "N: Scanline (indisponível)"
-    
+
     linhas = [
-        "=== Algoritmo de Preenchimento de Polígonos ===",
+        " ",
+        "Algoritmo de Preenchimento de Polígonos",
+        " ",
         "Click: Adicionar vértice",
-        f"ENTER: Validar | SPACE: Limpar TUDO | BACKSPACE: Remover | ESC: Sair | {scanline_texto}",
+        #"ENTER: Validar | SPACE: Limpar TUDO",
+        #"BACKSPACE: Remover | ESC: Sair",
+        #f"{scanline_texto}",
         "",
     ]
-    
+
     # Adicionar informações sobre polígonos finalizados
     if poligonos_finalizados is not None and len(poligonos_finalizados) > 0:
         linhas.append(f"Polígonos finalizados: {len(poligonos_finalizados)}")
         linhas.append("")
     num_vertices = len(vertices)
-    
+
     # Conta vértices distintos
     vertices_distintos = []
     for vertice in vertices:
         if vertice not in vertices_distintos:
             vertices_distintos.append(vertice)
     num_vertices_distintos = len(vertices_distintos)
-    
+
     linhas.append(f"Vértices: {num_vertices} (distintos: {num_vertices_distintos})")
     if num_vertices > 0:
         linhas.append(f"Último vértice: {vertices[-1]}")
-    
+
     if poligono_validado:
-        linhas.append("Status: Polígono validado ✓ - Use 'N' para scanline ou clique para novo polígono")
+        linhas.insert(0,"Status: Polígono validado ✓ - Use 'N' para scanline ou clique para novo polígono")
     elif bloqueado_por_poucos_vertices:
-        linhas.append("Status: BLOQUEADO - Poucos vértices distintos! Use SPACE para limpar")
+        linhas.insert(0,"Status: BLOQUEADO - Poucos vértices distintos! Use SPACE para limpar")
     elif num_vertices_distintos < 3:
-        linhas.append(f"Status: Adicione mais vértices distintos (atual: {num_vertices_distintos}/3)")
+        linhas.insert(0,f"Status: Adicione mais vértices distintos (atual: {num_vertices_distintos}/3)")
     elif num_vertices >= 4 and vertices[0] == vertices[-1]:
-        linhas.append("Status: Polígono fechado! Pressione ENTER para validar")
+        linhas.insert(0,"Status: Polígono fechado! Pressione ENTER para validar")
     elif num_vertices >= 3:
-        linhas.append("Status: Clique no primeiro vértice para fechar, ou ENTER para validar")
+        linhas.insert(0,"Status: Clique no primeiro vértice para fechar, ou ENTER para validar")
     else:
-        linhas.append("Status: Adicione mais vértices (mín. 3)")
+        linhas.insert(2,"Status: Adicione mais vértices (mín. 3)")
     if resultado_validacao:
         linhas.append("")
         linhas.append("=== Resultado da Validação ===")
@@ -231,17 +246,19 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
             linhas.append(f"{cor_info} V{i+1}: {vertice}")
             if len(linhas) > 20: linhas.append("..."); break
     x, y = 16, 8
+
+    # Cores das mensagens na tela
     for texto in linhas:
         cor = TEXTO_HUD
-        if "===" in texto: cor = (0, 100, 200)
+        if "===" in texto or "Algoritmo" in texto: cor = (0, 100, 200) # azul claro
         elif "Status:" in texto:
-            if "validado" in texto: cor = (0, 150, 0)
-            elif "BLOQUEADO" in texto: cor = (200, 0, 0)
-            elif "ENTER" in texto: cor = (200, 100, 0)
+            if "validado" in texto: cor = (0, 150, 0) # verde
+            elif "BLOQUEADO" in texto: cor = (200, 0, 0) # vermelho
+            elif "ENTER" in texto: cor = (200, 100, 0) # laranja
             else: cor = (150, 150, 0)
-        elif "válido" in texto.lower():
-            if "sem auto-interseção" in texto: cor = (0, 150, 0)
-            else: cor = (200, 50, 50)
+        elif "válido" in texto.lower(): cor = (200, 50, 50)
+            #if "sem auto-interseção" in texto: cor = (0, 150, 0)
+            #else: cor = (200, 50, 50)
         elif texto.startswith("🔴") or texto.startswith("🔵") or texto.startswith("⚪"): cor = (100, 100, 100)
         surf = font.render(texto, True, cor)
         surface.blit(surf, (x, y))
@@ -257,7 +274,7 @@ class EstadoApp:
         self.interceptos_scanline: List[Tuple[int, List[float]]] = []
         self.scanline_step: int = 0
         self.bloqueado_por_poucos_vertices: bool = False
-        
+
         # Lista de polígonos finalizados (cada um com seus vértices e pontos raster)
         self.poligonos_finalizados: List[Tuple[List[CelulaNaGrade], List[CelulaNaGrade]]] = []
 
@@ -272,17 +289,17 @@ class EstadoApp:
         if self.poligono_validado and len(self.vertices) > 0:
             print("Finalizando polígono anterior e começando novo...")
             self.finalizar_poligono()
-        
+
         if not self.poligono_validado:
             # Desbloqueia automaticamente quando tentar adicionar vértice
             if self.bloqueado_por_poucos_vertices:
                 self.bloqueado_por_poucos_vertices = False
                 print("Desbloqueado! Continuando a desenhar polígono...")
-            
+
             vertice_restrito = restringir_celula(celula)
             if len(self.vertices) >= 3 and vertice_restrito == self.vertices[0]:
                 self.vertices.append(vertice_restrito)
-                print("Polígono fechado automaticamente! Pressione ENTER para validar.")
+                print("Polígono fechado! Pressione ENTER para validar.")
                 return
             if not self.vertices or self.vertices[-1] != vertice_restrito:
                 self.vertices.append(vertice_restrito)
@@ -315,7 +332,7 @@ class EstadoApp:
         if self.poligono_validado:
             # Salva o polígono atual na lista de finalizados (com pontos raster vazios inicialmente)
             self.poligonos_finalizados.append((self.vertices.copy(), []))
-            
+
             # Reset do estado para um novo polígono
             self.vertices = []
             self.poligono_validado = False
@@ -324,9 +341,9 @@ class EstadoApp:
             self.interceptos_scanline = []
             self.scanline_step = 0
             self.bloqueado_por_poucos_vertices = False
-            
+
             print(f"Novo polígono pronto! Total de polígonos finalizados: {len(self.poligonos_finalizados)}")
-    
+
     def limpar_tudo(self):
         """Limpa polígono atual e todos os finalizados"""
         self.vertices = []
@@ -335,7 +352,7 @@ class EstadoApp:
         self.resultado_validacao = ""
         self.interceptos_scanline = []
         self.scanline_step = 0
-        self.bloqueado_por_poucos_vertices = False
+        self.blqueado_por_poucos_vertices = False
         self.poligonos_finalizados = []
         print("Todos os polígonos foram limpos!")
 
@@ -348,44 +365,44 @@ class EstadoApp:
         if not self.interceptos_scanline:
             # Import the algorithm functions from Main.py to avoid circular imports
             from Main import construir_tabela_arestas, algoritmo_preenchimento_scanline
-            
+
             # Coleta todos os polígonos (finalizados + atual se validado)
             todos_poligonos = []
-            
+
             # Adiciona polígonos finalizados
             for vertices_poligono, _ in self.poligonos_finalizados:
                 todos_poligonos.append(vertices_poligono)
-            
+
             # Adiciona polígono atual se validado
             if self.poligono_validado and len(self.vertices) > 0:
                 todos_poligonos.append(self.vertices)
-            
+
             if not todos_poligonos:
                 print("Nenhum polígono validado encontrado para scanline.")
                 return
-            
+
             # Constrói tabela de arestas global e encontra limites globais
             ET_global = {}
             ymin_global = float('inf')
             ymax_global = float('-inf')
-            
+
             for vertices in todos_poligonos:
                 ET, ymin, ymax = construir_tabela_arestas(vertices)
-                
+
                 # Atualiza limites globais
                 ymin_global = min(ymin_global, ymin)
                 ymax_global = max(ymax_global, ymax)
-                
+
                 # Combina ET deste polígono com ET global
                 for y_bucket in ET:
                     if y_bucket not in ET_global:
                         ET_global[y_bucket] = []
                     ET_global[y_bucket].extend(ET[y_bucket])
-            
+
             # Ordena arestas por x em cada bucket da ET global
             for y in ET_global:
                 ET_global[y].sort(key=lambda e: e.x)
-            
+
             self.interceptos_scanline = algoritmo_preenchimento_scanline(ET_global, ymin_global, ymax_global)
             self.scanline_step = 0
             print(f"Algoritmo de preenchimento iniciado para {len(todos_poligonos)} polígono(s) com {len(self.interceptos_scanline)} linhas de varredura.")
