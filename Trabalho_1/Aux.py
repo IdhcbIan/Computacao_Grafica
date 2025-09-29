@@ -3,8 +3,8 @@ import pygame
 import math
 from typing import List, Optional, Tuple
 
-# Import constants from Main.py
-# Note: This will create a circular import, so we'll define constants here instead
+# Importa constantes do Main.py
+# Nota: Isso criaria uma importação circular, então definimos as constantes aqui
 COLUNAS_GRADE, LINHAS_GRADE = 30, 30
 TAMANHO_CELULA, MARGEM = 20, 32
 MARGEM_ESQ = MARGEM * 13
@@ -20,31 +20,47 @@ XADREZ_B = (245, 245, 245)
 VERTICE_ATUAL = (50, 140, 255)
 VERTICE_ANTERIOR = (40, 200, 120)
 LINHA_TEMPORARIA = (255, 200, 0)
-LINHA_PREVIEW = (0, 0, 0)  # Preview lines black after validation
+LINHA_PREVIEW = (0, 0, 0)  # Linhas de preview pretas após validação
 CELULA_POLIGONO = (220, 60, 60)
 VERTICE_PRIMEIRO = (255, 50, 50)
 TEXTO_HUD = (20, 20, 20)
 CelulaNaGrade = Tuple[int, int]
 
 BOTOES = [
-        {"texto": "Limpar Tela",
-         "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 2*MARGEM, 120, 40),
-         "acao": "limpar"},
-        {"texto": "Scanline",
-         "rect": pygame.Rect(MARGEM + 180, ALTURA_JANELA - 5*MARGEM, 120, 40),
-         "acao": "scanline"},
-        {"texto": "Validar",
-         "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 5*MARGEM, 120, 40),
-         "acao": "validar"},
-        {"texto": "Remover Último",
-         "rect": pygame.Rect(MARGEM + 180, ALTURA_JANELA - 2*MARGEM, 180, 40),
-         "acao": "remover"},
-    ]
+    # Linha 0: Cor RGB (alinhado à esquerda) - movido para cima
+    {"texto": "Cor RGB",
+     "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 200, 120, 40),
+     "acao": "rgb"},
+    
+    # Linha 1: Esquerda - Limpar Tela, Direita - Remover Último - movido para cima
+    {"texto": "Limpar Tela",
+     "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 150, 120, 40),
+     "acao": "limpar"},
+    {"texto": "R_Ultimo",
+     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 150, 120, 40),
+     "acao": "remover"},
+    
+    # Linha 2: Esquerda - Validar, Direita - Fechar - movido para cima
+    {"texto": "Validar",
+     "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 100, 120, 40),
+     "acao": "validar"},
+    {"texto": "Fechar",
+     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 100, 120, 40),
+     "acao": "fechar"},
+    
+    # Linha 3: Esquerda - Scanline, Direita - Preencher - movido para cima
+    {"texto": "Scanline",
+     "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 50, 120, 40),
+     "acao": "scanline"},
+    {"texto": "Preencher",
+     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 50, 120, 40),
+     "acao": "draw"},
+]
 
-#------// Funcoes //------
+#------// Funções //------
 
 """
-    Funcoes para converter coordenadas da grade para coordenadas da tela e vice-versa.
+    Funções para converter coordenadas da grade para coordenadas da tela e vice-versa.
 """
 
 def grade_para_tela(celula: CelulaNaGrade) -> Tuple[int, int]:
@@ -93,10 +109,10 @@ class EdgeEntry:
         self.inv_slope = inv_slope  # 1/m para incremento de x
 
     def __str__(self):
-        return f"Edge(ymax={self.ymax}, x={self.x:.2f}, inv_slope={self.inv_slope:.2f})"
+        return f"Aresta(ymax={self.ymax}, x={self.x:.2f}, inv_slope={self.inv_slope:.2f})"
 
 """
-    Funcoes de desenho(PyGame).
+    Funções de desenho (PyGame).
 """
 
 def desenhar_tabuleiro(surface):
@@ -157,13 +173,14 @@ def desenhar_linhas_preview(surface, vertices, poligono_validado):
         p2_x, p2_y = centro_celula(vertices_para_desenhar[0])
         pygame.draw.line(surface, cor, (p1_x, p1_y), (p2_x, p2_y), 3)
 
-def desenhar_celulas_poligono(surface, pontos, passos_mostrados):
+def desenhar_celulas_poligono(surface, pontos, passos_mostrados, estado=None):
+    cor = estado.cor_preenchimento if estado else CELULA_POLIGONO
     for i, (col, linha) in enumerate(pontos[:passos_mostrados]):
         x, y = grade_para_tela((col, linha))
         rect = pygame.Rect(x + 2, y + 2, TAMANHO_CELULA - 4, TAMANHO_CELULA - 4)
-        surface.fill(CELULA_POLIGONO, rect)
+        surface.fill(cor, rect)
 
-def desenhar_poligonos_finalizados(surface, poligonos_finalizados):
+def desenhar_poligonos_finalizados(surface, poligonos_finalizados, estado):
     """Desenha todos os polígonos já finalizados/validados"""
     for vertices_poligono, pontos_raster in poligonos_finalizados:
         # Desenha os vértices do polígono finalizado
@@ -174,7 +191,7 @@ def desenhar_poligonos_finalizados(surface, poligonos_finalizados):
 
         # Desenha o preenchimento se houver pontos raster
         if pontos_raster:
-            desenhar_celulas_poligono(surface, pontos_raster, len(pontos_raster))
+            desenhar_celulas_poligono(surface, pontos_raster, len(pontos_raster), estado)
 
 def desenhar_interceptos(surface, interceptos, passo_atual):
     if passo_atual >= len(interceptos): return
@@ -278,6 +295,9 @@ class EstadoApp:
         # Lista de polígonos finalizados (cada um com seus vértices e pontos raster)
         self.poligonos_finalizados: List[Tuple[List[CelulaNaGrade], List[CelulaNaGrade]]] = []
 
+        # Cor de preenchimento configurável
+        self.cor_preenchimento = CELULA_POLIGONO
+
     def limpar_raster(self):
         self.pontos_raster = []
         self.interceptos_scanline = []
@@ -306,7 +326,7 @@ class EstadoApp:
 
     def validar_e_desenhar_poligono(self):
         if len(self.vertices) >= 3:
-            # Import here to avoid circular import
+            # Importa aqui para evitar importação circular
             from Main import poligono_e_valido
             eh_valido, mensagem = poligono_e_valido(self.vertices)
             self.resultado_validacao = mensagem
@@ -352,7 +372,7 @@ class EstadoApp:
         self.resultado_validacao = ""
         self.interceptos_scanline = []
         self.scanline_step = 0
-        self.blqueado_por_poucos_vertices = False
+        self.bloqueado_por_poucos_vertices = False
         self.poligonos_finalizados = []
         print("Todos os polígonos foram limpos!")
 
@@ -363,7 +383,7 @@ class EstadoApp:
 
     def iniciar_preenchimento_scanline(self):
         if not self.interceptos_scanline:
-            # Import the algorithm functions from Main.py to avoid circular imports
+            # Importa as funções do algoritmo do Main.py para evitar importações circulares
             from Main import construir_tabela_arestas, algoritmo_preenchimento_scanline
 
             # Coleta todos os polígonos (finalizados + atual se validado)
@@ -421,3 +441,29 @@ class EstadoApp:
                     for x in range(x_start, x_end):
                         self.pontos_raster.append((x, y))
             self.scanline_step += 1
+
+    def draw_all_at_once(self):
+        """Desenha o(s) polígono(s) inteiro(s) de uma vez em vez de linha por linha de scanline"""
+        # Inicializa scanline se não foi feito ainda
+        if not self.interceptos_scanline:
+            self.iniciar_preenchimento_scanline()
+        
+        if not self.interceptos_scanline:
+            print("Nenhum dado de scanline disponível.")
+            return
+        
+        # Limpa pontos raster atuais
+        self.pontos_raster = []
+        
+        # Processa todas as scanlines de uma vez
+        for y, xs in self.interceptos_scanline:
+            for i in range(0, len(xs), 2):
+                if i + 1 < len(xs):
+                    x_start = int(math.ceil(xs[i]))
+                    x_end = int(math.floor(xs[i + 1]))
+                    for x in range(x_start, x_end):
+                        self.pontos_raster.append((x, y))
+        
+        # Define o passo de scanline para o final para que o desenho de scanline mostre tudo
+        self.scanline_step = len(self.interceptos_scanline)
+        print(f"Desenho completo! {len(self.pontos_raster)} pontos pintados de uma vez.")

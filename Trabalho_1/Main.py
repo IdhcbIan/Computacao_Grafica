@@ -1,9 +1,9 @@
 """
-╭━━━━╮╭╮╱╱╱╱╱╭━━━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╭╮╱╱╱╭━━━╮╱╱╭╮
+╭━━━━╮╭╮╱╱╱╱╱╭━━━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╭╮╱╱╱╱╱╭╮╱╱╱╭━━━╮╱╱╭╮
 ┃╭╮╭╮┣╯┃╱╱╱╱╱┃╭━╮┃╱╱╱╱╱╱╱╱╱╱╱╱╱┃┃╱╱╱╱╱╱╱╱╱╱╭╯╰╮╱╱╱╱╱┃┃╱╱╱┃╭━╮┃╱╱┃┃
 ╰╯┃┃╰┻╮┃╱╱╱╱╱┃╰━╯┣━┳━━┳━━┳━╮╭━━┫╰━┳┳╮╭┳━━┳━╋╮╭╋━━╮╭━╯┣━━╮┃╰━╯┣━━┫┃╭┳━━┳━━┳━╮╭━━┳━━╮
 ╱╱┃┃╱╱┃┃╱╭━━╮┃╭━━┫╭┫┃━┫┃━┫╭╮┫╭━┫╭╮┣┫╰╯┃┃━┫╭╮┫┃┃╭╮┃┃╭╮┃┃━┫┃╭━━┫╭╮┃┃┣┫╭╮┃╭╮┃╭╮┫╭╮┃━━┫
-╱╱┃┃╱╭╯╰╮╰━━╯┃┃╱╱┃┃┃┃━┫┃━┫┃┃┃╰━┫┃┃┃┃┃┃┃┃━┫┃┃┃╰┫╰╯┃┃╰╯┃┃━┫┃┃╱╱┃╰╯┃╰┫┃╰╯┃╰╯┃┃┃┃╰╯┣━━┃
+╱╱┃┃╱╭╯╰╮╰━━╯┃┃╱╱┃┃┃┃━┫┃━┫┃┃┃╰━┫┃┃┃┃┃┃━┫┃┃┃╰┫╰╯┃┃╰╯┃┃━┫┃┃╱╱┃╰╯┃╰┫┃╰╯┃╰╯┃┃┃┃╰╯┣━━┃
 ╱╱╰╯╱╰━━╯╱╱╱╱╰╯╱╱╰╯╰━━┻━━┻╯╰┻━━┻╯╰┻┻┻┻┻━━┻╯╰┻━┻━━╯╰━━┻━━╯╰╯╱╱╰━━┻━┻┻━╮┣━━┻╯╰┻━━┻━━╯
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃
 ----------------------------------------------------------------
@@ -16,16 +16,16 @@ Julia Graziosi Ortiz - 11797810
 #------// Importando bibliotecas //------
 
 """
-     Usamos PyGame para a visualizacao interativa do processo
-de desenho de poligonos. Futuramente podemos integrar pygame com kernels de OpenGl para a melhor
-performance em problemas de computacao grafica maiores.
+     Usamos PyGame para a visualização interativa do processo
+de desenho de polígonos. Futuramente podemos integrar pygame com kernels de OpenGL para a melhor
+performance em problemas de computação gráfica maiores.
 """
 
 import sys
 import math
 import pygame
 from typing import List, Optional, Tuple
-# Importando funcoes auxiliares, classes e constantes que deixamos em Aux.py.
+# Importando funções auxiliares, classes e constantes que deixamos em Aux.py.
 
 from Aux import (
     EstadoApp, EdgeEntry, grade_para_tela, centro_celula, restringir_celula, tela_para_grade,
@@ -39,7 +39,7 @@ from Aux import (
 
 
 """
-    Funcoes para verificar se um poligono e valido.
+    Funções para verificar se um polígono é válido.
 """
 def checar_vertices_alinhados(vertices: List[CelulaNaGrade]) -> bool:
     """
@@ -104,10 +104,10 @@ def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
 
 def construir_tabela_arestas(vertices: List[CelulaNaGrade]):
     """
-    Constrói a Edge Table (ET) a partir dos vértices do polígono.
+    Constrói a Tabela de Arestas (ET) a partir dos vértices do polígono.
     Retorna: (ET, ymin, ymax)
     """
-    ET = {}  # Edge Table
+    ET = {}  # Tabela de Arestas
     n = len(vertices)
 
     # Inicializa limites y
@@ -154,7 +154,7 @@ def construir_tabela_arestas(vertices: List[CelulaNaGrade]):
 
 def algoritmo_preenchimento_scanline(ET, ymin, ymax):
     """
-    Algoritmo de preenchimento por varredura (Scanline Fill Algorithm) - BOTTOM-UP.
+    Algoritmo de preenchimento por varredura (Algoritmo de Preenchimento por Scanline) - DE BAIXO PARA CIMA.
     Implementa o Algoritmo 4.3 da apostila modificado para escaneamento de baixo para cima.
 
     Passos:
@@ -193,7 +193,7 @@ def algoritmo_preenchimento_scanline(ET, ymin, ymax):
     for y in ET_bottomup:
         ET_bottomup[y].sort(key=lambda e: e.x)
 
-    AET = []  # Active Edge Table (inicialmente vazia)
+    AET = []  # Tabela de Arestas Ativas (inicialmente vazia)
     y = ymax  # Linha de varredura atual (começando de baixo)
     resultados_scanline = []
 
@@ -261,6 +261,49 @@ def main():
                                     print("Nenhum polígono validado. Valide um primeiro!")
                             else:
                                 estado.avancar_scanline()
+                        elif acao == "draw":
+                            # Botão Draw - pinta tudo de uma vez
+                            if not estado.interceptos_scanline:
+                                if estado.poligono_validado or estado.poligonos_finalizados:
+                                    estado.draw_all_at_once()
+                                else:
+                                    print("Nenhum polígono validado. Valide um primeiro!")
+                            else:
+                                estado.draw_all_at_once()
+                        elif acao == "fechar":
+                            # Botão Fechar - fecha o polígono automaticamente voltando à origem
+                            if len(estado.vertices) >= 3:
+                                primeiro_vertice = estado.vertices[0]
+                                # Verifica se o último vértice é diferente do primeiro (não está fechado)
+                                if len(estado.vertices) < 4 or estado.vertices[-1] != primeiro_vertice:
+                                    estado.vertices.append(primeiro_vertice)
+                                    print(f"Polígono fechado automaticamente! Vértices: {len(estado.vertices)}")
+                                else:
+                                    print("Polígono já está fechado!")
+                            else:
+                                print("Adicione pelo menos 3 vértices antes de fechar!")
+                        elif acao == "rgb":
+                            # Botão Cor RGB - solicita valores R, G, B no terminal
+                            print("\n=== CONFIGURAÇÃO DE COR RGB ===")
+                            try:
+                                r = int(input("Digite o valor de R (0-255): "))
+                                g = int(input("Digite o valor de G (0-255): "))
+                                b = int(input("Digite o valor de B (0-255): "))
+                                
+                                # Valida valores de entrada
+                                if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
+                                    print("ERRO: Valores devem estar entre 0 e 255!")
+                                    return
+                                
+                                # Atualiza a cor no estado
+                                estado.cor_preenchimento = (r, g, b)
+                                print(f"Cor atualizada para RGB({r}, {g}, {b})")
+                                print("Esta cor será usada no próximo preenchimento!")
+                                
+                            except ValueError:
+                                print("ERRO: Digite apenas números inteiros válidos!")
+                            except KeyboardInterrupt:
+                                print("\nOperação cancelada.")
                         elif acao == "validar":
                             vertices_distintos = []
                             for vertice in estado.vertices:
@@ -288,7 +331,7 @@ def main():
 
         # Desenhar todos os polígonos finalizados primeiro (para ficar atrás)
         if estado.poligonos_finalizados:
-            desenhar_poligonos_finalizados(tela, estado.poligonos_finalizados)
+            desenhar_poligonos_finalizados(tela, estado.poligonos_finalizados, estado)
 
         # Desenhar o polígono atual sendo desenhado (para ficar na frente)
         if estado.vertices:
@@ -300,7 +343,7 @@ def main():
                 if pos_mouse[0] >= MARGEM_ESQ and pos_mouse[0] <= LARGURA_JANELA - MARGEM and pos_mouse[1] <= ALTURA_JANELA - MARGEM and pos_mouse[1] >= MARGEM:
                     pygame.draw.line(tela, LINHA_TEMPORARIA, centro_celula(estado.vertices[-1]), pos_mouse, 2)
         if estado.poligono_validado and estado.pontos_raster:
-            desenhar_celulas_poligono(tela, estado.pontos_raster, len(estado.pontos_raster))
+            desenhar_celulas_poligono(tela, estado.pontos_raster, len(estado.pontos_raster), estado)
         if estado.interceptos_scanline and estado.scanline_step < len(estado.interceptos_scanline):
             desenhar_interceptos(tela, estado.interceptos_scanline, estado.scanline_step)
         desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster), estado.bloqueado_por_poucos_vertices, estado.poligonos_finalizados)
