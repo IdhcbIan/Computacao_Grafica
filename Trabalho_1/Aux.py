@@ -5,15 +5,26 @@ from typing import List, Optional, Tuple
 
 # Importa constantes do Main.py
 # Nota: Isso criaria uma importação circular, então definimos as constantes aqui
-COLUNAS_GRADE, LINHAS_GRADE = 30, 30
-TAMANHO_CELULA, MARGEM = 20, 32
+# Manter proporção: COLUNAS = LINHAS , LINHAS*TAMANHO = 600
+COLUNAS_GRADE, LINHAS_GRADE = 60, 60
+TAMANHO_CELULA, MARGEM = 10, 32
 MARGEM_ESQ = MARGEM * 13
 LARGURA_JANELA = COLUNAS_GRADE * TAMANHO_CELULA + MARGEM + MARGEM_ESQ
 ALTURA_JANELA = LINHAS_GRADE * TAMANHO_CELULA + MARGEM * 2
 FPS = 60
 
-BRANCO = (240, 240, 240)
-PRETO = (30, 30, 30)
+COR = {
+    "branco": (240, 240, 240),
+    "preto": (30, 30, 30),
+    "vermelho": (220, 60, 60),
+    "laranja": (255, 127, 0),
+    "amarelo": (255, 255, 50),
+    "verde": (0, 190, 0),
+    "azul": (140, 190, 215),
+    "anil": (0, 0, 255),
+    "violeta": (143, 0, 255)
+}
+
 LINHA_GRADE = (120, 120, 120)
 XADREZ_A = (210, 210, 210)
 XADREZ_B = (245, 245, 245)
@@ -27,33 +38,51 @@ TEXTO_HUD = (20, 20, 20)
 CelulaNaGrade = Tuple[int, int]
 
 BOTOES = [
-    # Linha 0: Cor RGB (alinhado à esquerda) - movido para cima
-    {"texto": "Cor RGB",
-     "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 200, 120, 40),
-     "acao": "rgb"},
-    
+    # Linha 0: Cores
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 5, ALTURA_JANELA - 200, 30, 30),
+     "acao": "vermelho"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 45, ALTURA_JANELA - 200, 30, 30),
+     "acao": "laranja"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 85, ALTURA_JANELA - 200, 30, 30),
+     "acao": "amarelo"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 125, ALTURA_JANELA - 200, 30, 30),
+     "acao": "verde"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 165, ALTURA_JANELA - 200, 30, 30),
+     "acao": "azul"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 205, ALTURA_JANELA - 200, 30, 30),
+     "acao": "anil"},
+    {"texto": "",
+     "rect": pygame.Rect(MARGEM + 245, ALTURA_JANELA - 200, 30, 30),
+     "acao": "violeta"},
+
     # Linha 1: Esquerda - Limpar Tela, Direita - Remover Último - movido para cima
     {"texto": "Limpar Tela",
      "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 150, 120, 40),
      "acao": "limpar"},
-    {"texto": "R_Ultimo",
-     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 150, 120, 40),
+    {"texto": "Remover Último",
+     "rect": pygame.Rect(MARGEM + 160, ALTURA_JANELA - 150, 120, 40),
      "acao": "remover"},
-    
+
     # Linha 2: Esquerda - Validar, Direita - Fechar - movido para cima
     {"texto": "Validar",
      "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 100, 120, 40),
      "acao": "validar"},
-    {"texto": "Fechar",
-     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 100, 120, 40),
+    {"texto": "Fechar Polígono",
+     "rect": pygame.Rect(MARGEM + 160, ALTURA_JANELA - 100, 120, 40),
      "acao": "fechar"},
-    
+
     # Linha 3: Esquerda - Scanline, Direita - Preencher - movido para cima
     {"texto": "Scanline",
      "rect": pygame.Rect(MARGEM, ALTURA_JANELA - 50, 120, 40),
      "acao": "scanline"},
     {"texto": "Preencher",
-     "rect": pygame.Rect(MARGEM + 140, ALTURA_JANELA - 50, 120, 40),
+     "rect": pygame.Rect(MARGEM + 160, ALTURA_JANELA - 50, 120, 40),
      "acao": "draw"},
 ]
 
@@ -132,12 +161,40 @@ def desenhar_tabuleiro(surface):
         y = MARGEM + r * TAMANHO_CELULA
         pygame.draw.line(surface, LINHA_GRADE, (MARGEM_ESQ, y), (MARGEM_ESQ + COLUNAS_GRADE * TAMANHO_CELULA, y), 1)
 
-def desenhar_botoes(surface,fonte,botoes):
+def desenhar_botoes(surface, fonte, fonte2, cor_atual, botoes):
+    # Fundo para as cores
+    texto = "Cores Diponíveis para Preenchimento"
+    rect = pygame.Rect(MARGEM, ALTURA_JANELA - 230, 280, 70)
+    pygame.draw.rect(surface, (200,200,200) , rect, border_radius=6)
+    pygame.draw.rect(surface, (50,50,50), rect, width=2, border_radius=6)
+    texto_render = fonte2.render(texto, True, COR["preto"])
+    texto_rect = texto_render.get_rect()
+    texto_rect.centerx = rect.centerx
+    texto_rect.top = rect.top + 10
+
+    surface.blit(texto_render, texto_rect)
+
     for botao in botoes:
-        pygame.draw.rect(surface, (200,200,200) , botao["rect"], border_radius=6)
-        pygame.draw.rect(surface, (50,50,50), botao["rect"], width=2, border_radius=6)
-        texto_render = fonte.render(botao["texto"], True, PRETO)
+        # Fundo e contorno
+        if botao["acao"] in COR:
+            pygame.draw.rect(surface, COR[botao["acao"]], botao["rect"], border_radius=6)
+            # contorno diferente para a cor atual
+            if COR[botao["acao"]] == cor_atual :
+                pygame.draw.rect(surface, COR["branco"], botao["rect"], width=2, border_radius=6)
+            else:
+                pygame.draw.rect(surface, (50,50,50), botao["rect"], width=2, border_radius=6)
+        else:
+            pygame.draw.rect(surface, (200,200,200) , botao["rect"], border_radius=6)
+            pygame.draw.rect(surface, (50,50,50), botao["rect"], width=2, border_radius=6)
+
+        # Texto
+        if botao["acao"] == "remover" or botao["acao"] == "fechar":
+            texto_render = fonte2.render(botao["texto"], True, COR["preto"])
+        else :
+            texto_render = fonte.render(botao["texto"], True, COR["preto"])
+
         texto_rect = texto_render.get_rect(center=botao["rect"].center)
+
         surface.blit(texto_render, texto_rect)
 
 def desenhar_vertices(surface, vertices, poligono_validado):
@@ -155,7 +212,7 @@ def desenhar_vertices(surface, vertices, poligono_validado):
         elif i == len(vertices) - 1:
             pygame.draw.circle(surface, VERTICE_ATUAL, (vx, vy), TAMANHO_CELULA // 3)
         else:
-            cor = PRETO if poligono_validado else VERTICE_ANTERIOR
+            cor = COR["preto"] if poligono_validado else VERTICE_ANTERIOR
             pygame.draw.circle(surface, cor, (vx, vy), TAMANHO_CELULA // 3)
 
 def desenhar_linhas_preview(surface, vertices, poligono_validado):
@@ -163,7 +220,7 @@ def desenhar_linhas_preview(surface, vertices, poligono_validado):
     vertices_para_desenhar = vertices[:]
     poligono_fechado_bool = len(vertices) >= 4 and vertices[0] == vertices[-1]
     if poligono_fechado_bool: vertices_para_desenhar = vertices[:-1]
-    cor = PRETO if poligono_validado else LINHA_PREVIEW
+    cor = COR["preto"] if poligono_validado else LINHA_PREVIEW
     for i in range(len(vertices_para_desenhar) - 1):
         p1_x, p1_y = centro_celula(vertices_para_desenhar[i])
         p2_x, p2_y = centro_celula(vertices_para_desenhar[i + 1])
@@ -174,10 +231,11 @@ def desenhar_linhas_preview(surface, vertices, poligono_validado):
         pygame.draw.line(surface, cor, (p1_x, p1_y), (p2_x, p2_y), 3)
 
 def desenhar_celulas_poligono(surface, pontos, passos_mostrados, estado=None):
-    cor = estado.cor_preenchimento if estado else CELULA_POLIGONO
+    cor = estado.cor_preenchimento if estado else COR["vermelho"]
     for i, (col, linha) in enumerate(pontos[:passos_mostrados]):
         x, y = grade_para_tela((col, linha))
-        rect = pygame.Rect(x + 2, y + 2, TAMANHO_CELULA - 4, TAMANHO_CELULA - 4)
+        #rect = pygame.Rect(x + 2, y + 2, TAMANHO_CELULA - 4, TAMANHO_CELULA - 4)
+        rect = pygame.Rect(x, y, TAMANHO_CELULA, TAMANHO_CELULA)
         surface.fill(cor, rect)
 
 def desenhar_poligonos_finalizados(surface, poligonos_finalizados, estado):
@@ -206,18 +264,8 @@ def desenhar_interceptos(surface, interceptos, passo_atual):
 def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao, passos_mostrados, total_pontos, bloqueado_por_poucos_vertices=False, poligonos_finalizados=None):
     # Verifica se scanline está disponível
     tem_poligonos_para_scanline = poligono_validado or (poligonos_finalizados and len(poligonos_finalizados) > 0)
-    scanline_texto = "N: Scanline GLOBAL" if tem_poligonos_para_scanline else "N: Scanline (indisponível)"
 
-    linhas = [
-        " ",
-        "Algoritmo de Preenchimento de Polígonos",
-        " ",
-        "Click: Adicionar vértice",
-        #"ENTER: Validar | SPACE: Limpar TUDO",
-        #"BACKSPACE: Remover | ESC: Sair",
-        #f"{scanline_texto}",
-        "",
-    ]
+    linhas = ["","Click: Adicionar vértice","",]
 
     # Adicionar informações sobre polígonos finalizados
     if poligonos_finalizados is not None and len(poligonos_finalizados) > 0:
@@ -237,45 +285,45 @@ def desenhar_hud(surface, font, vertices, poligono_validado, resultado_validacao
         linhas.append(f"Último vértice: {vertices[-1]}")
 
     if poligono_validado:
-        linhas.insert(0,"Status: Polígono validado ✓ - Use 'N' para scanline ou clique para novo polígono")
+        linhas.insert(0,"Status: Polígono validado ✓ - Preencha o polígono com SCANLINE ou PREENCHER.")
     elif bloqueado_por_poucos_vertices:
-        linhas.insert(0,"Status: BLOQUEADO - Poucos vértices distintos! Use SPACE para limpar")
+        linhas.insert(0,"Status: BLOQUEADO - Poucos vértices distintos!")
     elif num_vertices_distintos < 3:
         linhas.insert(0,f"Status: Adicione mais vértices distintos (atual: {num_vertices_distintos}/3)")
     elif num_vertices >= 4 and vertices[0] == vertices[-1]:
-        linhas.insert(0,"Status: Polígono fechado! Pressione ENTER para validar")
-    elif num_vertices >= 3:
-        linhas.insert(0,"Status: Clique no primeiro vértice para fechar, ou ENTER para validar")
-    else:
-        linhas.insert(2,"Status: Adicione mais vértices (mín. 3)")
+        linhas.insert(0,"Status: Polígono fechado! Clique em VALIDAR ou continue inserindo vértices.")
+    else: #num_vertices >= 3:
+        linhas.insert(0,"Status: Clique no primeiro vértice ou FECHAR para fechar o polígono")
+
     if resultado_validacao:
         linhas.append("")
         linhas.append("=== Resultado da Validação ===")
         linhas.append(resultado_validacao)
+
     if total_pontos > 0:
         linhas.append("")
         linhas.append(f"Pontos desenhados: {passos_mostrados}/{total_pontos}")
+
     if vertices:
         linhas.append("")
         linhas.append("=== Vértices do Polígono ===")
         for i, vertice in enumerate(vertices):
             cor_info = "🔴" if i == 0 else "🔵" if i == len(vertices) - 1 else "⚪"
             linhas.append(f"{cor_info} V{i+1}: {vertice}")
-            if len(linhas) > 20: linhas.append("..."); break
+            if len(linhas) > 18: linhas.append("..."); break
     x, y = 16, 8
 
     # Cores das mensagens na tela
     for texto in linhas:
         cor = TEXTO_HUD
-        if "===" in texto or "Algoritmo" in texto: cor = (0, 100, 200) # azul claro
+        if "===" in texto in texto: cor = COR["azul"] # azul claro
         elif "Status:" in texto:
             if "validado" in texto: cor = (0, 150, 0) # verde
             elif "BLOQUEADO" in texto: cor = (200, 0, 0) # vermelho
             elif "ENTER" in texto: cor = (200, 100, 0) # laranja
             else: cor = (150, 150, 0)
-        elif "válido" in texto.lower(): cor = (200, 50, 50)
-            #if "sem auto-interseção" in texto: cor = (0, 150, 0)
-            #else: cor = (200, 50, 50)
+        elif "válido" in texto.lower(): cor = (0, 150, 0)
+
         elif texto.startswith("🔴") or texto.startswith("🔵") or texto.startswith("⚪"): cor = (100, 100, 100)
         surf = font.render(texto, True, cor)
         surface.blit(surf, (x, y))
@@ -296,7 +344,7 @@ class EstadoApp:
         self.poligonos_finalizados: List[Tuple[List[CelulaNaGrade], List[CelulaNaGrade]]] = []
 
         # Cor de preenchimento configurável
-        self.cor_preenchimento = CELULA_POLIGONO
+        self.cor_preenchimento = COR["vermelho"]
 
     def limpar_raster(self):
         self.pontos_raster = []
@@ -447,14 +495,14 @@ class EstadoApp:
         # Inicializa scanline se não foi feito ainda
         if not self.interceptos_scanline:
             self.iniciar_preenchimento_scanline()
-        
+
         if not self.interceptos_scanline:
             print("Nenhum dado de scanline disponível.")
             return
-        
+
         # Limpa pontos raster atuais
         self.pontos_raster = []
-        
+
         # Processa todas as scanlines de uma vez
         for y, xs in self.interceptos_scanline:
             for i in range(0, len(xs), 2):
@@ -463,7 +511,7 @@ class EstadoApp:
                     x_end = int(math.floor(xs[i + 1]))
                     for x in range(x_start, x_end):
                         self.pontos_raster.append((x, y))
-        
+
         # Define o passo de scanline para o final para que o desenho de scanline mostre tudo
         self.scanline_step = len(self.interceptos_scanline)
         print(f"Desenho completo! {len(self.pontos_raster)} pontos pintados de uma vez.")

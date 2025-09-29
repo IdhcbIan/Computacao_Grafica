@@ -25,6 +25,7 @@ import sys
 import math
 import pygame
 from typing import List, Optional, Tuple
+
 # Importando funções auxiliares, classes e constantes que deixamos em Aux.py.
 
 from Aux import (
@@ -32,11 +33,9 @@ from Aux import (
     desenhar_tabuleiro, desenhar_botoes, desenhar_vertices, desenhar_linhas_preview,
     desenhar_celulas_poligono, desenhar_interceptos, desenhar_hud, desenhar_poligonos_finalizados,
     COLUNAS_GRADE, LINHAS_GRADE, TAMANHO_CELULA, MARGEM, MARGEM_ESQ, LARGURA_JANELA, ALTURA_JANELA, FPS,
-    BRANCO, PRETO, LINHA_GRADE, XADREZ_A, XADREZ_B, VERTICE_ATUAL, VERTICE_ANTERIOR, BOTOES,
+    LINHA_GRADE, XADREZ_A, XADREZ_B, VERTICE_ATUAL, VERTICE_ANTERIOR, BOTOES, COR,
     LINHA_TEMPORARIA, LINHA_PREVIEW, CELULA_POLIGONO, VERTICE_PRIMEIRO, TEXTO_HUD, CelulaNaGrade
 )
-
-
 
 """
     Funções para verificar se um polígono é válido.
@@ -75,7 +74,6 @@ def checar_vertices_alinhados(vertices: List[CelulaNaGrade]) -> bool:
     return True  # Todos os vértices são colineares
 
 
-
 def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
     """
     Valida se um polígono é válido para preenchimento.
@@ -99,7 +97,7 @@ def poligono_e_valido(vertices: List[CelulaNaGrade]) -> Tuple[bool, str]:
 
     # Qualquer polígono fechado é válido para preenchimento
     # (incluindo auto-interseções, pois o algoritmo scanline pode lidar com eles)
-    return True, "Polígono válido"
+    return True, "Polígono válido "
 
 
 def construir_tabela_arestas(vertices: List[CelulaNaGrade]):
@@ -151,6 +149,7 @@ def construir_tabela_arestas(vertices: List[CelulaNaGrade]):
         ET[y].sort(key=lambda e: e.x)
 
     return ET, ymin_global, ymax_global
+
 
 def algoritmo_preenchimento_scanline(ET, ymin, ymax):
     """
@@ -224,16 +223,16 @@ def algoritmo_preenchimento_scanline(ET, ymin, ymax):
 
     return resultados_scanline
 
+
 def main():
     pygame.init()
     tela = pygame.display.set_mode((LARGURA_JANELA, ALTURA_JANELA))
     pygame.display.set_caption("Algoritmo de Preenchimento de Polígonos - Scanline Fill")
     relogio = pygame.time.Clock()
     fonte = pygame.font.SysFont("consolas,monospace", 16)
+    fonte_menor = pygame.font.SysFont("consolas,monospace",12)
     estado = EstadoApp()
-
     botoes = BOTOES
-
     executando = True
 
     while executando:
@@ -282,28 +281,9 @@ def main():
                                     print("Polígono já está fechado!")
                             else:
                                 print("Adicione pelo menos 3 vértices antes de fechar!")
-                        elif acao == "rgb":
-                            # Botão Cor RGB - solicita valores R, G, B no terminal
-                            print("\n=== CONFIGURAÇÃO DE COR RGB ===")
-                            try:
-                                r = int(input("Digite o valor de R (0-255): "))
-                                g = int(input("Digite o valor de G (0-255): "))
-                                b = int(input("Digite o valor de B (0-255): "))
-                                
-                                # Valida valores de entrada
-                                if not (0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255):
-                                    print("ERRO: Valores devem estar entre 0 e 255!")
-                                    return
-                                
-                                # Atualiza a cor no estado
-                                estado.cor_preenchimento = (r, g, b)
-                                print(f"Cor atualizada para RGB({r}, {g}, {b})")
-                                print("Esta cor será usada no próximo preenchimento!")
-                                
-                            except ValueError:
-                                print("ERRO: Digite apenas números inteiros válidos!")
-                            except KeyboardInterrupt:
-                                print("\nOperação cancelada.")
+                        # Cores pré-definidas
+                        elif acao in COR:
+                            estado.cor_preenchimento = COR[acao]
                         elif acao == "validar":
                             vertices_distintos = []
                             for vertice in estado.vertices:
@@ -324,9 +304,9 @@ def main():
                     if celula is not None:
                         estado.adicionar_vertice(celula)
 
-        tela.fill(BRANCO)
+        tela.fill(COR["branco"])
         desenhar_tabuleiro(tela)
-        desenhar_botoes(tela,fonte,botoes)
+        desenhar_botoes(tela,fonte,fonte_menor,estado.cor_preenchimento,botoes)
 
 
         # Desenhar todos os polígonos finalizados primeiro (para ficar atrás)
@@ -342,10 +322,13 @@ def main():
             if not estado.poligono_validado and len(estado.vertices) > 0 and not poligono_fechado_bool:
                 if pos_mouse[0] >= MARGEM_ESQ and pos_mouse[0] <= LARGURA_JANELA - MARGEM and pos_mouse[1] <= ALTURA_JANELA - MARGEM and pos_mouse[1] >= MARGEM:
                     pygame.draw.line(tela, LINHA_TEMPORARIA, centro_celula(estado.vertices[-1]), pos_mouse, 2)
+
         if estado.poligono_validado and estado.pontos_raster:
             desenhar_celulas_poligono(tela, estado.pontos_raster, len(estado.pontos_raster), estado)
+
         if estado.interceptos_scanline and estado.scanline_step < len(estado.interceptos_scanline):
             desenhar_interceptos(tela, estado.interceptos_scanline, estado.scanline_step)
+
         desenhar_hud(tela, fonte, estado.vertices, estado.poligono_validado, estado.resultado_validacao, len(estado.pontos_raster), len(estado.pontos_raster), estado.bloqueado_por_poucos_vertices, estado.poligonos_finalizados)
 
         pygame.display.flip()
