@@ -6,167 +6,188 @@ import sys
 import multiprocessing as mp
 
 from Aux_3D import (Estado3D, init_opengl, draw_sphere, update_light, render_3d_to_texture, FBO,
-                   LARGURA_JANELA, ALTURA_JANELA, FPS, MATERIAL_COLORS, LARGURA_3D, ALTURA_3D)
+                   LARGURA_JANELA, ALTURA_JANELA, FPS, MATERIAL_COLORS, LARGURA_3D, ALTURA_3D, set_lighting_model)
 
-# Layout constants (similar to Aux.py)
-MARGEM = 10
-PANEL_3D_POS = (MARGEM, MARGEM)  # Not used now, but kept for reference
-PANEL_3D_SIZE = (LARGURA_3D, ALTURA_3D)
-LARGURA_GUI = LARGURA_JANELA - LARGURA_3D - MARGEM * 2
+# Layout constants
+MARGEM = 15
+LARGURA_GUI = 480  # Expanded from 200 to 480 for much better space
+LIGHT_STEP = 0.5
+BUTTON_REPEAT_DELAY = 300
+BUTTON_REPEAT_INTERVAL = 50
 
-# Light control settings
-LIGHT_STEP = 0.5  # Larger step for light movement
-BUTTON_REPEAT_DELAY = 300  # ms before repeat starts
-BUTTON_REPEAT_INTERVAL = 50  # ms between repeats
-
-# Color scheme
+# Color scheme - Modern and clean
 COLOR_SCHEME = {
-    'bg': (245, 247, 250),
+    'bg': (250, 251, 253),
     'panel': (255, 255, 255),
-    'border': (200, 210, 220),
-    'text': (40, 50, 60),
-    'text_light': (100, 110, 120),
-    'accent': (70, 130, 220),
-    'accent_hover': (90, 150, 240),
-    'selected': (230, 240, 255),
-    'button': (240, 243, 248),
-    'button_hover': (220, 230, 245),
+    'panel_alt': (247, 249, 252),
+    'border': (190, 200, 215),
+    'text': (30, 40, 55),
+    'text_light': (110, 120, 135),
+    'accent': (66, 135, 245),
+    'accent_hover': (90, 160, 255),
+    'selected': (225, 240, 255),
+    'selected_border': (66, 135, 245),
+    'button': (240, 243, 250),
+    'button_hover': (220, 235, 255),
+    'divider': (210, 220, 235),
 }
 
-# Button system (pure Pygame, positioned in GUI area)
-BOTOES_3D = [
-    # Shape selector buttons
-    {"texto": "Sphere", "rect": pygame.Rect(15, 60, 55, 32), "acao": "sphere", "tipo": "shape"},
-    {"texto": "Cube", "rect": pygame.Rect(75, 60, 50, 32), "acao": "cube", "tipo": "shape"},
-    {"texto": "Torus", "rect": pygame.Rect(130, 60, 50, 32), "acao": "torus", "tipo": "shape"},
-    
-    # Camera angle buttons
-    {"texto": "Front", "rect": pygame.Rect(15, 135, 42, 28), "acao": "front", "tipo": "camera"},
-    {"texto": "Top", "rect": pygame.Rect(62, 135, 38, 28), "acao": "top", "tipo": "camera"},
-    {"texto": "Side", "rect": pygame.Rect(105, 135, 38, 28), "acao": "side", "tipo": "camera"},
-    {"texto": "Diag", "rect": pygame.Rect(148, 135, 38, 28), "acao": "diagonal", "tipo": "camera"},
-    
-    # Color buttons (material selection)
-    {"texto": "", "rect": pygame.Rect(25, 205, 40, 40), "acao": "orange", "cor": (255, 127, 0)},
-    {"texto": "", "rect": pygame.Rect(75, 205, 40, 40), "acao": "red", "cor": (220, 60, 60)},
-    {"texto": "", "rect": pygame.Rect(125, 205, 40, 40), "acao": "blue", "cor": (140, 190, 215)},
-    
-    # Light control buttons (grouped)
-    {"texto": "↑", "rect": pygame.Rect(75, 295, 45, 38), "acao": "light_up", "tipo": "light"},
-    {"texto": "↓", "rect": pygame.Rect(75, 378, 45, 38), "acao": "light_down", "tipo": "light"},
-    {"texto": "←", "rect": pygame.Rect(20, 336, 45, 38), "acao": "light_left", "tipo": "light"},
-    {"texto": "→", "rect": pygame.Rect(130, 336, 45, 38), "acao": "light_right", "tipo": "light"},
-    
-    # Re-render button
-    {"texto": "🔄 Re-render", "rect": pygame.Rect(20, 450, 150, 40), "acao": "rerender", "tipo": "action"},
-    
-    # Quit button (bottom)
-    {"texto": "✕ Quit", "rect": pygame.Rect(20, ALTURA_JANELA - 55, 150, 40), "acao": "quit", "tipo": "action"},
-]
+# Button layout - using full width (480px) with better organization
+def create_buttons():
+    buttons = []
+    margin = MARGEM
+    width = LARGURA_GUI - 2 * margin  # ~450px usable width
+
+    # Row 1: Shape selector buttons (4 buttons in one row)
+    y_start = 55
+    btn_w = (width - 3 * 8) // 4  # 4 buttons with gaps
+    btn_h = 40
+    spacing = 8
+    buttons.extend([
+        {"texto": "Sphere", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "sphere", "tipo": "shape"},
+        {"texto": "Cube", "rect": pygame.Rect(margin + btn_w + spacing, y_start, btn_w, btn_h), "acao": "cube", "tipo": "shape"},
+        {"texto": "Torus", "rect": pygame.Rect(margin + 2 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "torus", "tipo": "shape"},
+        {"texto": "Pyramid", "rect": pygame.Rect(margin + 3 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "pyramid", "tipo": "shape"},
+    ])
+
+    # Row 2: Camera angle buttons (4 buttons in one row)
+    y_start = 120
+    btn_h = 38
+    buttons.extend([
+        {"texto": "Front", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "front", "tipo": "camera"},
+        {"texto": "Top", "rect": pygame.Rect(margin + btn_w + spacing, y_start, btn_w, btn_h), "acao": "top", "tipo": "camera"},
+        {"texto": "Side", "rect": pygame.Rect(margin + 2 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "side", "tipo": "camera"},
+        {"texto": "Diagonal", "rect": pygame.Rect(margin + 3 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "diagonal", "tipo": "camera"},
+    ])
+
+    # Row 3: Lighting model buttons (3 buttons in one row)
+    y_start = 185
+    btn_h = 38
+    btn_w_light = (width - 2 * spacing) // 3
+    buttons.extend([
+        {"texto": "Flat", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "flat", "tipo": "lighting"},
+        {"texto": "Gouraud", "rect": pygame.Rect(margin + btn_w_light + spacing, y_start, btn_w_light, btn_h), "acao": "gouraud", "tipo": "lighting"},
+        {"texto": "Phong", "rect": pygame.Rect(margin + 2 * (btn_w_light + spacing), y_start, btn_w_light, btn_h), "acao": "phong", "tipo": "lighting"},
+    ])
+
+    # Row 4: Material color buttons (3 swatches, centered and spacious)
+    y_start = 250
+    swatch_size = 50
+    swatch_spacing = (width - 3 * swatch_size) // 4
+    buttons.extend([
+        {"texto": "", "rect": pygame.Rect(margin + swatch_spacing, y_start, swatch_size, swatch_size), "acao": "orange", "cor": (255, 127, 0)},
+        {"texto": "", "rect": pygame.Rect(margin + 2 * swatch_spacing + swatch_size, y_start, swatch_size, swatch_size), "acao": "red", "cor": (220, 60, 60)},
+        {"texto": "", "rect": pygame.Rect(margin + 3 * swatch_spacing + 2 * swatch_size, y_start, swatch_size, swatch_size), "acao": "blue", "cor": (140, 190, 215)},
+    ])
+
+    # Row 5: Light control (cross pattern - nicely centered)
+    y_start = 330
+    btn_size = 45
+    center_x = margin + width // 2
+    spacing_light = 12
+    buttons.extend([
+        {"texto": "↑", "rect": pygame.Rect(center_x - btn_size // 2, y_start, btn_size, btn_size), "acao": "light_up", "tipo": "light"},
+        {"texto": "←", "rect": pygame.Rect(center_x - btn_size - spacing_light, y_start + btn_size + spacing_light, btn_size, btn_size), "acao": "light_left", "tipo": "light"},
+        {"texto": "→", "rect": pygame.Rect(center_x + spacing_light, y_start + btn_size + spacing_light, btn_size, btn_size), "acao": "light_right", "tipo": "light"},
+        {"texto": "↓", "rect": pygame.Rect(center_x - btn_size // 2, y_start + 2 * (btn_size + spacing_light), btn_size, btn_size), "acao": "light_down", "tipo": "light"},
+    ])
+
+    # Action buttons at bottom (full width)
+    y_start = ALTURA_JANELA - 55
+    btn_h = 40
+    buttons.extend([
+        {"texto": "Quit", "rect": pygame.Rect(margin, y_start, width, btn_h), "acao": "quit", "tipo": "action"},
+    ])
+
+    return buttons
+
+BOTOES_3D = create_buttons()
 
 def draw_section_header(surface, font, text, y_pos):
-    """Draw a beautiful section header"""
-    header_rect = pygame.Rect(10, y_pos, 170, 30)
-    pygame.draw.rect(surface, COLOR_SCHEME['panel'], header_rect, border_radius=8)
-    pygame.draw.line(surface, COLOR_SCHEME['accent'], (15, y_pos + 28), (175, y_pos + 28), 2)
-    
-    text_surf = font.render(text, True, COLOR_SCHEME['text'])
-    text_rect = text_surf.get_rect(center=(header_rect.centerx, header_rect.centery))
-    surface.blit(text_surf, text_rect)
+    """Draw a subtle section header with improved styling"""
+    margin = MARGEM
+    width = LARGURA_GUI - 2 * margin
+    text_surf = font.render(text, True, COLOR_SCHEME['accent'])
+    surface.blit(text_surf, (margin, y_pos))
+    # Subtle underline
+    pygame.draw.line(surface, COLOR_SCHEME['divider'], (margin, y_pos + 20), (margin + width, y_pos + 20), 1)
 
-def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_atual, camera_atual):
-    # Background for GUI panel with gradient effect
+def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_atual, camera_atual, lighting_atual):
+    """Draw all GUI buttons and headers with improved styling"""
     gui_surface.fill(COLOR_SCHEME['bg'])
+
+    # Section headers - new positions for wider layout
+    draw_section_header(gui_surface, font_tiny, "SHAPES", 30)
+    draw_section_header(gui_surface, font_tiny, "CAMERA", 105)
+    draw_section_header(gui_surface, font_tiny, "LIGHTING", 165)
+    draw_section_header(gui_surface, font_tiny, "MATERIAL", 235)
+    draw_section_header(gui_surface, font_tiny, "LIGHT POSITION", 315)
     
-    # Draw section headers
-    draw_section_header(gui_surface, font_small, "🔷 SHAPE", 25)
-    draw_section_header(gui_surface, font_tiny, "📷 CAMERA", 100)
-    draw_section_header(gui_surface, font_tiny, "🎨 MATERIAL", 170)
-    draw_section_header(gui_surface, font_tiny, "💡 LIGHT", 260)
-    
+    # Draw buttons
     for botao in BOTOES_3D:
-        # Color buttons (material swatches)
         if "cor" in botao:
-            # Draw shadow
-            shadow_rect = botao["rect"].copy()
-            shadow_rect.x += 2
-            shadow_rect.y += 2
-            pygame.draw.rect(gui_surface, (180, 180, 180), shadow_rect, border_radius=10)
-            
-            # Draw color swatch
+            # Material color swatches with nice styling
             pygame.draw.rect(gui_surface, botao["cor"], botao["rect"], border_radius=10)
             
-            # Highlight current material with accent border and glow
-            if botao["acao"] == cor_atual:
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['accent'], botao["rect"], width=4, border_radius=10)
-                # Inner highlight
-                inner_rect = botao["rect"].inflate(-8, -8)
-                pygame.draw.rect(gui_surface, (255, 255, 255, 128), inner_rect, width=2, border_radius=6)
-            else:
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['border'], botao["rect"], width=2, border_radius=10)
+            # Border based on selection
+            border_color = COLOR_SCHEME['selected_border'] if botao["acao"] == cor_atual else COLOR_SCHEME['border']
+            border_width = 4 if botao["acao"] == cor_atual else 2
+            pygame.draw.rect(gui_surface, border_color, botao["rect"], width=border_width, border_radius=10)
         else:
-            # Regular buttons with modern styling
-            is_selected = False
-            if botao.get("tipo") == "shape" and botao["acao"] == shape_atual:
-                is_selected = True
-            elif botao.get("tipo") == "camera" and botao["acao"] == camera_atual:
-                is_selected = True
-            
-            # Draw shadow
-            shadow_rect = botao["rect"].copy()
-            shadow_rect.x += 2
-            shadow_rect.y += 2
-            pygame.draw.rect(gui_surface, (200, 200, 200), shadow_rect, border_radius=8)
-            
-            # Button background
+            # Regular buttons with improved styling
+            is_selected = (
+                (botao.get("tipo") == "shape" and botao["acao"] == shape_atual) or
+                (botao.get("tipo") == "camera" and botao["acao"] == camera_atual) or
+                (botao.get("tipo") == "lighting" and botao["acao"] == lighting_atual)
+            )
+
+            # Button background with gradient effect
             if is_selected:
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['selected'], botao["rect"], border_radius=8)
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['accent'], botao["rect"], width=3, border_radius=8)
+                bg_color = COLOR_SCHEME['selected']
+                border_color = COLOR_SCHEME['selected_border']
+                border_width = 2.5
             else:
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['panel'], botao["rect"], border_radius=8)
-                pygame.draw.rect(gui_surface, COLOR_SCHEME['border'], botao["rect"], width=2, border_radius=8)
+                bg_color = COLOR_SCHEME['button']
+                border_color = COLOR_SCHEME['border']
+                border_width = 1
             
-            # Text rendering
+            pygame.draw.rect(gui_surface, bg_color, botao["rect"], border_radius=8)
+            pygame.draw.rect(gui_surface, border_color, botao["rect"], width=int(border_width), border_radius=8)
+
+            # Text rendering with appropriate font
             if botao.get("tipo") == "light":
-                # Arrows for light controls (larger font)
                 texto_render = font.render(botao["texto"], True, COLOR_SCHEME['text'])
-            elif botao.get("tipo") == "action":
-                texto_render = font_small.render(botao["texto"], True, COLOR_SCHEME['text'])
             else:
-                texto_render = font_tiny.render(botao["texto"], True, COLOR_SCHEME['text'])
-            
+                texto_render = font_small.render(botao["texto"], True, COLOR_SCHEME['text'])
+
             texto_rect = texto_render.get_rect(center=botao["rect"].center)
             gui_surface.blit(texto_render, texto_rect)
 
-def desenhar_hud(gui_surface, font_small, font_tiny, estado, current_width, current_height):
-    # Info section background with modern card design
-    info_rect = pygame.Rect(10, 500, 170, 90)
-    
-    # Shadow
-    shadow_rect = info_rect.copy()
-    shadow_rect.x += 2
-    shadow_rect.y += 2
-    pygame.draw.rect(gui_surface, (200, 200, 200), shadow_rect, border_radius=10)
-    
-    # Card background
-    pygame.draw.rect(gui_surface, COLOR_SCHEME['panel'], info_rect, border_radius=10)
-    pygame.draw.rect(gui_surface, COLOR_SCHEME['border'], info_rect, width=2, border_radius=10)
-    
-    # Header
-    header_surf = font_small.render("ℹ INFO", True, COLOR_SCHEME['accent'])
-    gui_surface.blit(header_surf, (info_rect.x + 10, info_rect.y + 8))
-    
-    # Info lines with icons
-    info_data = [
-        (f"Shape: {estado.shape.capitalize()}", info_rect.y + 30),
-        (f"Material: {estado.material.capitalize()}", info_rect.y + 45),
-        (f"Camera: {estado.camera_angle.capitalize()}", info_rect.y + 60),
-        (f"Window: {current_width}×{current_height}", info_rect.y + 75),
+def desenhar_hud(gui_surface, font_small, font_tiny, estado):
+    """Draw info panel at bottom with improved styling"""
+    margin = MARGEM
+    width = LARGURA_GUI - 2 * margin
+    info_rect = pygame.Rect(margin, ALTURA_JANELA - 50, width, 38)
+
+    # Panel styling
+    pygame.draw.rect(gui_surface, COLOR_SCHEME['panel_alt'], info_rect, border_radius=8)
+    pygame.draw.rect(gui_surface, COLOR_SCHEME['divider'], info_rect, width=1, border_radius=8)
+
+    # Info text with better layout - 3 columns
+    col_width = width // 3
+    info_items = [
+        ("Shape", estado.shape.capitalize()),
+        ("Lighting", estado.lighting_model.capitalize()),
+        ("Camera", estado.camera_angle.capitalize()),
     ]
     
-    for text, y_pos in info_data:
-        surf = font_tiny.render(text, True, COLOR_SCHEME['text_light'])
-        gui_surface.blit(surf, (info_rect.x + 10, y_pos))
+    y = info_rect.y + 8
+    for idx, (label, value) in enumerate(info_items):
+        x = margin + idx * col_width + 10
+        label_surf = font_tiny.render(label + ":", True, COLOR_SCHEME['text_light'])
+        value_surf = font_tiny.render(value, True, COLOR_SCHEME['accent'])
+        gui_surface.blit(label_surf, (x, y))
+        gui_surface.blit(value_surf, (x, y + 14))
 
 def run_3d_window(cmd_queue, state_queue=None):
     """Process for the 3D rendering window."""
@@ -261,6 +282,8 @@ def run_3d_window(cmd_queue, state_queue=None):
                     estado.shape = cmd['value']
                 elif cmd['type'] == 'camera':
                     estado.camera_angle = cmd['value']
+                elif cmd['type'] == 'lighting':
+                    estado.lighting_model = cmd['value']
                 elif cmd['type'] == 'rerender':
                     # Recreate FBO with new size if provided
                     new_width = cmd.get('width', current_width)
@@ -289,13 +312,13 @@ def run_3d_window(cmd_queue, state_queue=None):
 def run_gui_window(cmd_queue, state_queue=None):
     """Process for the GUI controls window."""
     pygame.init()
-    # GUI window
+    # GUI window - wider for better layout
     screen_gui = pygame.display.set_mode((LARGURA_GUI, ALTURA_JANELA))
     pygame.display.set_caption('3D Controls')
     clock = pygame.time.Clock()
-    font = pygame.font.SysFont("arial", 22, bold=True)  # Larger for arrows
-    font_small = pygame.font.SysFont("arial", 13, bold=True)  # Section headers
-    font_tiny = pygame.font.SysFont("arial", 11)  # Button text
+    font = pygame.font.SysFont("arial", 20, bold=True)  # Larger for arrows and title
+    font_small = pygame.font.SysFont("arial", 12, bold=True)  # Button text
+    font_tiny = pygame.font.SysFont("arial", 10)  # Section headers and info
     
     # Enable key repeat for arrow keys
     pygame.key.set_repeat(BUTTON_REPEAT_DELAY, BUTTON_REPEAT_INTERVAL)
@@ -342,12 +365,15 @@ def run_gui_window(cmd_queue, state_queue=None):
                                 mouse_hold_timer = pygame.time.get_ticks()
                                 mouse_hold_started = False
                             
-                            if acao in ["sphere", "cube", "torus"]:
+                            if acao in ["sphere", "cube", "torus", "pyramid"]:
                                 estado.shape = acao
                                 cmd_queue.put({'type': 'shape', 'value': acao})
                             elif acao in ["front", "top", "side", "diagonal"]:
                                 estado.camera_angle = acao
                                 cmd_queue.put({'type': 'camera', 'value': acao})
+                            elif acao in ["flat", "gouraud", "phong"]:
+                                estado.lighting_model = acao
+                                cmd_queue.put({'type': 'lighting', 'value': acao})
                             elif acao in MATERIAL_COLORS:
                                 estado.material = acao
                                 cmd_queue.put({'type': 'material', 'value': acao})
@@ -411,18 +437,19 @@ def run_gui_window(cmd_queue, state_queue=None):
         except:
             pass
         
-        # Clear GUI surface
-        screen_gui.fill((255, 255, 255))
+        # Clear GUI surface with background color
+        screen_gui.fill(COLOR_SCHEME['bg'])
         
-        # Draw GUI (buttons and HUD)
-        desenhar_botoes(screen_gui, font, font_small, font_tiny, estado.material, estado.shape, estado.camera_angle)
-        desenhar_hud(screen_gui, font_small, font_tiny, estado, current_width, current_height)
+        # Draw title bar with gradient effect
+        title_rect = pygame.Rect(0, 0, LARGURA_GUI, 28)
+        pygame.draw.rect(screen_gui, COLOR_SCHEME['accent'], title_rect)
+        title_surf = font.render("3D Renderer", True, (255, 255, 255))
+        title_rect_centered = title_surf.get_rect(center=(LARGURA_GUI // 2, 14))
+        screen_gui.blit(title_surf, title_rect_centered)
         
-        # Title at top with modern styling
-        title_rect = pygame.Rect(5, 2, 180, 20)
-        pygame.draw.rect(screen_gui, COLOR_SCHEME['accent'], title_rect, border_radius=5)
-        title_surf = font_small.render("✨ 3D Shape Renderer", True, (255, 255, 255))
-        screen_gui.blit(title_surf, (12, 5))
+        # Draw GUI controls
+        desenhar_botoes(screen_gui, font, font_small, font_tiny, estado.material, estado.shape, estado.camera_angle, estado.lighting_model)
+        desenhar_hud(screen_gui, font_small, font_tiny, estado)
         
         pygame.display.flip()
         clock.tick(FPS)

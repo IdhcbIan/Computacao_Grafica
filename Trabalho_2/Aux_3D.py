@@ -27,8 +27,9 @@ class Estado3D:
     def __init__(self):
         self.light_pos = [3.0, 3.0, 3.0, 1.0]
         self.material = 'orange'
-        self.shape = 'sphere'  # Current shape: 'sphere', 'cube', 'torus'
+        self.shape = 'sphere'  # Current shape: 'sphere', 'cube', 'torus', 'pyramid'
         self.camera_angle = 'front'  # Camera angles: 'front', 'top', 'side', 'diagonal'
+        self.lighting_model = 'gouraud'  # Lighting models: 'flat', 'gouraud', 'phong'
         self.running = True
 
 class FBO:
@@ -96,6 +97,9 @@ def draw_shape(shape_name='sphere', material_name='orange'):
     elif shape_name == 'torus':
         import Torus
         Torus.draw_torus(MATERIAL_COLORS, material_name)
+    elif shape_name == 'pyramid':
+        import Pyramid
+        Pyramid.draw_pyramid(MATERIAL_COLORS, material_name)
     else:
         # Default to sphere
         import Sphere
@@ -108,20 +112,44 @@ def draw_sphere(material_name='orange'):
 def update_light(estado):
     glLightfv(GL_LIGHT0, GL_POSITION, estado.light_pos)
 
+def set_lighting_model(model_name='gouraud'):
+    """
+    Configura o modelo de iluminação (flat, gouraud ou phong)
+
+    Args:
+        model_name: Nome do modelo ('flat', 'gouraud', ou 'phong')
+    """
+    if model_name == 'flat':
+        import LightingFlat
+        LightingFlat.enable()
+    elif model_name == 'gouraud':
+        import LightingGouraud
+        LightingGouraud.enable()
+    elif model_name == 'phong':
+        import LightingPhong
+        LightingPhong.enable()
+    else:
+        # Default to Gouraud
+        import LightingGouraud
+        LightingGouraud.enable()
+
 def render_3d_to_texture(estado, fbo):
     fbo.bind()
     glClearColor(0.1, 0.1, 0.2, 1.0)  # Dark background for 3D
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    
+
+    # Set lighting model
+    set_lighting_model(estado.lighting_model)
+
     # Set up projection matrix
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(45, LARGURA_3D / ALTURA_3D, 0.1, 50.0)
-    
+
     # Set up modelview matrix with camera position based on angle
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    
+
     # Camera positions for different angles
     if estado.camera_angle == 'front':
         gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Front view
@@ -133,7 +161,7 @@ def render_3d_to_texture(estado, fbo):
         gluLookAt(5, 5, 5, 0, 0, 0, 0, 1, 0)  # Diagonal view
     else:
         gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Default front
-    
+
     update_light(estado)
     draw_shape(estado.shape, estado.material)
     fbo.unbind()
