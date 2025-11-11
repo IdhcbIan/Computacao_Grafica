@@ -14,18 +14,18 @@ def draw_pyramid(material_colors, material_name='orange'):
     glMaterialf(GL_FRONT, GL_SHININESS, material['shininess'])
 
     # Pyramid vertices
-    apex = [0, 1.5, 0]  # Top point
+    apex = [0, -1.5, 0]  # Now pointing downward
     base = [
-        [-1, -1, 1],   # Front left
-        [1, -1, 1],    # Front right
-        [1, -1, -1],   # Back right
-        [-1, -1, -1]   # Back left
+        [-1, 1, 1],   # Front left (top)
+        [1, 1, 1],    # Front right
+        [1, 1, -1],   # Back right
+        [-1, 1, -1]   # Back left
     ]
 
     # Draw base (square)
     glBegin(GL_QUADS)
-    glNormal3f(0, -1, 0)  # Normal pointing down
-    for vertex in reversed(base):  # Reversed for correct winding
+    glNormal3f(0, 1, 0)  # Normal pointing up
+    for vertex in base:
         glVertex3fv(vertex)
     glEnd()
 
@@ -33,28 +33,28 @@ def draw_pyramid(material_colors, material_name='orange'):
     glBegin(GL_TRIANGLES)
 
     # Front face
-    glNormal3f(0, 0.5, 1)
+    glNormal3f(0, -0.5, 1)
     glVertex3fv(apex)
-    glVertex3fv(base[0])
     glVertex3fv(base[1])
+    glVertex3fv(base[0])
 
     # Right face
-    glNormal3f(1, 0.5, 0)
+    glNormal3f(1, -0.5, 0)
     glVertex3fv(apex)
-    glVertex3fv(base[1])
     glVertex3fv(base[2])
+    glVertex3fv(base[1])
 
     # Back face
-    glNormal3f(0, 0.5, -1)
+    glNormal3f(0, -0.5, -1)
     glVertex3fv(apex)
-    glVertex3fv(base[2])
     glVertex3fv(base[3])
+    glVertex3fv(base[2])
 
     # Left face
-    glNormal3f(-1, 0.5, 0)
+    glNormal3f(-1, -0.5, 0)
     glVertex3fv(apex)
-    glVertex3fv(base[3])
     glVertex3fv(base[0])
+    glVertex3fv(base[3])
 
     glEnd()
 

@@ -63,8 +63,11 @@ void main() {
     float diff = max(dot(N, L), 0.0);
     vec3 diffuse = lightDiffuse * Kd.rgb * diff;
 
-    // Specular
-    float spec = pow(max(dot(R, V), 0.0), shininess);
+    // Specular (only when surface is lit)
+    float spec = 0.0;
+    if (diff > 0.0) {
+        spec = pow(max(dot(R, V), 0.0), shininess);
+    }
     vec3 specular = lightSpecular * Ks.rgb * spec;
 
     vec3 result = ambient + diffuse + specular;
@@ -113,14 +116,16 @@ def disable():
     glEnable(GL_LIGHTING)
     glShadeModel(GL_SMOOTH)
 
-def generate_sphere_triangles(slices=20, stacks=20):
+def generate_sphere_triangles(slices=32, stacks=32):
     """
     Generates vertex positions and normals for a unit sphere using triangles.
     Returns lists of [x,y,z] for positions and normals.
+    Fixed: Ensured counter-clockwise winding for outer-facing triangles.
+    Increased resolution for fuller appearance.
     """
     pos = []
     norm = []
-    for i in range(stacks):
+    for i in range(stacks + 1):
         lat0 = math.pi * (-0.5 + float(i) / stacks)
         z0 = math.sin(lat0)
         zr0 = math.cos(lat0)
@@ -134,113 +139,75 @@ def generate_sphere_triangles(slices=20, stacks=20):
             lng1 = 2 * math.pi * float(j + 1) / slices
             x1 = math.cos(lng1)
             y1 = math.sin(lng1)
-            # Triangle 1
-            pos.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr0, y1 * zr0, z0], [x1 * zr1, y1 * zr1, z1]])
-            norm.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr0, y1 * zr0, z0], [x1 * zr1, y1 * zr1, z1]])
-            # Triangle 2
-            pos.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr1, y1 * zr1, z1], [x0 * zr1, y0 * zr1, z1]])
-            norm.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr1, y1 * zr1, z1], [x0 * zr1, y0 * zr1, z1]])
+            # Triangle 1: Reversed order for CCW (v0, v2, v1 instead of v0,v1,v2 for southern hemisphere)
+            if i < stacks:
+                # Bottom triangle (pointing outward)
+                pos.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr1, y1 * zr1, z1], [x1 * zr0, y1 * zr0, z0]])
+                norm.extend([[x0 * zr0, y0 * zr0, z0], [x1 * zr1, y1 * zr1, z1], [x1 * zr0, y1 * zr0, z0]])
+                # Top triangle
+                pos.extend([[x0 * zr0, y0 * zr0, z0], [x0 * zr1, y0 * zr1, z1], [x1 * zr1, y1 * zr1, z1]])
+                norm.extend([[x0 * zr0, y0 * zr0, z0], [x0 * zr1, y0 * zr1, z1], [x1 * zr1, y1 * zr1, z1]])
     return pos, norm
 
 def generate_cube_triangles():
     """
     Generates vertex positions and normals for a cube using triangles (duplicated verts for flat shading).
     Returns lists of [x,y,z] for positions and normals.
+    Fixed: Corrected vertex orders to ensure counter-clockwise winding when viewed from outside.
     """
     pos = []
     norm = []
     half = 1.0
-    # Back face (z = -half)
+    # Back face (z = -half), viewed from back: CCW [0,3,2,1] -> triangles [0,3,2] and [0,2,1]
     n = [0, 0, -1]
-    pos.extend([[-half, -half, -half], [half, -half, -half], [half, half, -half],
-                [-half, -half, -half], [half, half, -half], [-half, half, -half]])
-    for _ in range(6):
-        norm.extend(n)
-    # Front face (z = half)
+    # Tri 1: bottom-left, top-left, top-right
+    pos.extend([[-half, -half, -half], [-half, half, -half], [half, half, -half]])
+    norm.extend([n, n, n])
+    # Tri 2: bottom-left, top-right, bottom-right
+    pos.extend([[-half, -half, -half], [half, half, -half], [half, -half, -half]])
+    norm.extend([n, n, n])
+    # Front face (z = half), viewed from front: CCW [4,5,7,6] -> [4,5,7] [4,7,6]
     n = [0, 0, 1]
-    pos.extend([[-half, -half, half], [half, half, half], [half, -half, half],
-                [-half, half, half], [-half, -half, half], [half, -half, half]])
-    for _ in range(6):
-        norm.extend(n)
-    # Bottom face (y = -half)
+    pos.extend([[-half, -half, half], [half, -half, half], [half, half, half]])
+    norm.extend([n, n, n])
+    pos.extend([[-half, -half, half], [half, half, half], [-half, half, half]])
+    norm.extend([n, n, n])
+    # Bottom face (y = -half), viewed from below: CCW [0,4,5,1] but reverse for outward -> [0,1,5,4]
     n = [0, -1, 0]
-    pos.extend([[-half, -half, -half], [half, -half, half], [half, -half, -half],
-                [-half, -half, -half], [-half, -half, half], [-half, -half, half]])
-    for _ in range(6):
-        norm.extend(n)
-    # Top face (y = half)
+    pos.extend([[half, -half, -half], [half, -half, half], [-half, -half, half]])
+    norm.extend([n, n, n])
+    pos.extend([[half, -half, -half], [-half, -half, half], [-half, -half, -half]])
+    norm.extend([n, n, n])
+    # Top face (y = half), viewed from above: CCW [3,2,6,7]
     n = [0, 1, 0]
-    pos.extend([[half, half, -half], [half, half, half], [-half, half, half],
-                [half, half, -half], [-half, half, half], [-half, half, -half]])
-    for _ in range(6):
-        norm.extend(n)
-    # Left face (x = -half)
+    pos.extend([[-half, half, -half], [half, half, -half], [half, half, half]])
+    norm.extend([n, n, n])
+    pos.extend([[-half, half, -half], [half, half, half], [-half, half, half]])
+    norm.extend([n, n, n])
+    # Left face (x = -half), viewed from left: CCW [0,4,7,3]
     n = [-1, 0, 0]
-    pos.extend([[-half, -half, -half], [-half, -half, half], [-half, half, half],
-                [-half, -half, -half], [-half, half, half], [-half, half, -half]])
-    for _ in range(6):
-        norm.extend(n)
-    # Right face (x = half)
+    pos.extend([[-half, -half, -half], [-half, -half, half], [-half, half, half]])
+    norm.extend([n, n, n])
+    pos.extend([[-half, -half, -half], [-half, half, half], [-half, half, -half]])
+    norm.extend([n, n, n])
+    # Right face (x = half), viewed from right: CCW [1,5,6,2]
     n = [1, 0, 0]
-    pos.extend([[half, half, half], [half, -half, -half], [half, -half, half],
-                [half, half, half], [half, half, -half], [half, -half, -half]])
-    for _ in range(6):
-        norm.extend(n)
+    pos.extend([[half, -half, half], [half, -half, -half], [half, half, -half]])
+    norm.extend([n, n, n])
+    pos.extend([[half, -half, half], [half, half, -half], [half, half, half]])
+    norm.extend([n, n, n])
     return pos, norm
 
-def generate_torus_triangles(rings=16, sides=32):
+def generate_torus_triangles(rings=24, sides=48):
     """
     Generates vertex positions and normals for a torus using triangles.
     Returns lists of [x,y,z] for positions and normals.
+    Fixed: Clean triangle list with consistent CCW winding; removed buggy code; increased resolution.
     """
     pos = []
     norm = []
     inner_radius = 0.4
     outer_radius = 1.0
-    for i in range(rings):
-        for j in range(sides):
-            for k in range(2):
-                s = (i + k) % rings
-                t = j % sides
-                
-                theta = s * 2.0 * math.pi / rings
-                phi = t * 2.0 * math.pi / sides
-                
-                x = (outer_radius + inner_radius * math.cos(phi)) * math.cos(theta)
-                y = (outer_radius + inner_radius * math.cos(phi)) * math.sin(theta)
-                z = inner_radius * math.sin(phi)
-                
-                nx = math.cos(phi) * math.cos(theta)
-                ny = math.cos(phi) * math.sin(theta)
-                nz = math.sin(phi)
-                
-                pos.append([x, y, z])
-                norm.append([nx, ny, nz])
-            
-            # Second set for the quad
-            s1 = (i + 1) % rings
-            t = j % sides
-            
-            theta1 = s1 * 2.0 * math.pi / rings
-            phi = t * 2.0 * math.pi / sides
-            
-            x1 = (outer_radius + inner_radius * math.cos(phi)) * math.cos(theta1)
-            y1 = (outer_radius + inner_radius * math.cos(phi)) * math.sin(theta1)
-            z1 = inner_radius * math.sin(phi)
-            
-            nx1 = math.cos(phi) * math.cos(theta1)
-            ny1 = math.cos(phi) * math.sin(theta1)
-            nz1 = math.sin(phi)
-            
-            pos.append([x1, y1, z1])
-            norm.append([nx1, ny1, nz1])
-            
-            # For triangles, but this is approximate; adjust for proper triangulation
-            # Actually, for quad strip to triangles, but for simplicity, this generates more verts
-    # Note: This is a simplified generation; for exact, use proper triangle list
-    # But for demo, use the loop to append 6 verts per quad
-    pos = []
-    norm = []
     for i in range(rings):
         theta0 = i * 2.0 * math.pi / rings
         theta1 = (i + 1) * 2.0 * math.pi / rings
@@ -248,81 +215,72 @@ def generate_torus_triangles(rings=16, sides=32):
             phi0 = j * 2.0 * math.pi / sides
             phi1 = (j + 1) * 2.0 * math.pi / sides
             
-            # Quad vertices
+            # Quad vertices (v0 bottom-left, v1 bottom-right, v2 top-right, v3 top-left)
             # v0
             x0 = (outer_radius + inner_radius * math.cos(phi0)) * math.cos(theta0)
             y0 = (outer_radius + inner_radius * math.cos(phi0)) * math.sin(theta0)
             z0 = inner_radius * math.sin(phi0)
-            n0x = math.cos(phi0) * math.cos(theta0)
-            n0y = math.cos(phi0) * math.sin(theta0)
-            n0z = math.sin(phi0)
+            n0 = [math.cos(phi0) * math.cos(theta0), math.cos(phi0) * math.sin(theta0), math.sin(phi0)]
             # v1
             x1 = (outer_radius + inner_radius * math.cos(phi1)) * math.cos(theta0)
             y1 = (outer_radius + inner_radius * math.cos(phi1)) * math.sin(theta0)
             z1 = inner_radius * math.sin(phi1)
-            n1x = math.cos(phi1) * math.cos(theta0)
-            n1y = math.cos(phi1) * math.sin(theta0)
-            n1z = math.sin(phi1)
+            n1 = [math.cos(phi1) * math.cos(theta0), math.cos(phi1) * math.sin(theta0), math.sin(phi1)]
             # v2
             x2 = (outer_radius + inner_radius * math.cos(phi1)) * math.cos(theta1)
             y2 = (outer_radius + inner_radius * math.cos(phi1)) * math.sin(theta1)
             z2 = inner_radius * math.sin(phi1)
-            n2x = math.cos(phi1) * math.cos(theta1)
-            n2y = math.cos(phi1) * math.sin(theta1)
-            n2z = math.sin(phi1)
+            n2 = [math.cos(phi1) * math.cos(theta1), math.cos(phi1) * math.sin(theta1), math.sin(phi1)]
             # v3
             x3 = (outer_radius + inner_radius * math.cos(phi0)) * math.cos(theta1)
             y3 = (outer_radius + inner_radius * math.cos(phi0)) * math.sin(theta1)
             z3 = inner_radius * math.sin(phi0)
-            n3x = math.cos(phi0) * math.cos(theta1)
-            n3y = math.cos(phi0) * math.sin(theta1)
-            n3z = math.sin(phi0)
+            n3 = [math.cos(phi0) * math.cos(theta1), math.cos(phi0) * math.sin(theta1), math.sin(phi0)]
             
-            # Triangle 1: v0, v1, v2
+            # Triangle 1: v0, v1, v2 (CCW when viewed from outside)
             pos.extend([[x0, y0, z0], [x1, y1, z1], [x2, y2, z2]])
-            norm.extend([[n0x, n0y, n0z], [n1x, n1y, n1z], [n2x, n2y, n2z]])
-            # Triangle 2: v0, v2, v3
+            norm.extend([n0, n1, n2])
+            # Triangle 2: v0, v2, v3 (CCW)
             pos.extend([[x0, y0, z0], [x2, y2, z2], [x3, y3, z3]])
-            norm.extend([[n0x, n0y, n0z], [n2x, n2y, n2z], [n3x, n3y, n3z]])
+            norm.extend([n0, n2, n3])
     return pos, norm
 
 def generate_pyramid_triangles():
     """
     Generates vertex positions and normals for a pyramid using triangles.
     Returns lists of [x,y,z] for positions and normals.
+    Fixed: Reversed base triangles for outward-facing (CCW from above); ensured side triangles CCW from outside.
     """
     pos = []
     norm = []
-    apex = [0, 1.5, 0]
+    apex = [0, -1.5, 0]
     base = [
-        [-1, -1, 1],   # 0 front left
-        [1, -1, 1],    # 1 front right
-        [1, -1, -1],   # 2 back right
-        [-1, -1, -1]   # 3 back left
+        [-1, 1, 1],   # 0 front left (now at y=1)
+        [1, 1, 1],    # 1 front right
+        [1, 1, -1],   # 2 back right
+        [-1, 1, -1]   # 3 back left
     ]
-    # Base (quad as two triangles), normal [0,-1,0]
-    n_base = [0, -1, 0]
-    # Tri 1: 0,1,2
+    # Base (quad as two triangles) now on top, normal pointing up
+    n_base = [0, 1, 0]
     pos.extend([base[0], base[1], base[2]])
     norm.extend([n_base, n_base, n_base])
-    # Tri 2: 0,2,3
     pos.extend([base[0], base[2], base[3]])
     norm.extend([n_base, n_base, n_base])
-    # Front face tri: apex,0,1 normal [0,0.5,1] normalized? but approx
-    n_front = [0, 0.707, 0.707]  # normalized [0,0.5,1]
-    pos.extend([apex, base[0], base[1]])
+    # Front face: ensure outward normal points toward +Z
+    n_front = [0, -0.5, 1]
+    pos.extend([apex, base[1], base[0]])
     norm.extend([n_front, n_front, n_front])
-    # Right face: apex,1,2 [0.707,0.707,0]
-    n_right = [0.707, 0.707, 0]
-    pos.extend([apex, base[1], base[2]])
+    # Right face: outward normal toward +X
+    n_right = [1, -0.5, 0]
+    pos.extend([apex, base[2], base[1]])
     norm.extend([n_right, n_right, n_right])
-    # Back face: apex,2,3 [0,0.707,-0.707]
-    n_back = [0, 0.707, -0.707]
-    pos.extend([apex, base[2], base[3]])
+    # Back face: outward normal toward -Z
+    n_back = [0, -0.5, -1]
+    pos.extend([apex, base[3], base[2]])
     norm.extend([n_back, n_back, n_back])
-    # Left face: apex,3,0 [-0.707,0.707,0]
-    n_left = [-0.707, 0.707, 0]
-    pos.extend([apex, base[3], base[0]])
+    # Left face: outward normal toward -X
+    n_left = [-1, -0.5, 0]
+    pos.extend([apex, base[0], base[3]])
     norm.extend([n_left, n_left, n_left])
     return pos, norm
 
@@ -330,10 +288,14 @@ def draw_phong(estado):
     """
     Draws the selected shape using Phong shader with VBO rendering.
     Uses the current OpenGL matrices and estado for light and material.
+    Fixed: Disabled backface culling to ensure all faces visible; increased resolutions.
     """
     global shaderprogram
     if not shaderprogram:
         return
+    
+    # Disable culling to show all sides fully
+    glDisable(GL_CULL_FACE)
     
     # Get uniform locations (get once per draw for simplicity)
     modelView_loc = glGetUniformLocation(shaderprogram, "modelView")
@@ -354,9 +316,13 @@ def draw_phong(estado):
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview)
     glGetFloatv(GL_PROJECTION_MATRIX, projection)
     
-    # Compute normal matrix
-    modelview_3x3 = modelview[:3, :3]
-    normal_mat = np.transpose(np.linalg.inv(modelview_3x3)).astype(np.float32)
+    # Convert to row-major for CPU-side calculations
+    modelview_rm = np.transpose(modelview)
+    
+    # Compute normal matrix from the upper-left 3x3 of the row-major modelview
+    modelview_3x3 = modelview_rm[:3, :3]
+    normal_mat = np.linalg.inv(modelview_3x3)
+    normal_mat = np.transpose(normal_mat).astype(np.float32)
     
     # Set matrix uniforms
     glUniformMatrix4fv(modelView_loc, 1, GL_FALSE, modelview)
@@ -364,7 +330,9 @@ def draw_phong(estado):
     glUniformMatrix3fv(normalMatrix_loc, 1, GL_FALSE, normal_mat)
     
     # Light properties
-    light_pos = np.array(estado.light_pos[:3], dtype=np.float32)
+    light_pos_world = np.array(estado.light_pos, dtype=np.float32)
+    light_pos_view = modelview_rm @ light_pos_world
+    light_pos = np.array(light_pos_view[:3], dtype=np.float32)
     light_ambient = np.array(LIGHT_AMBIENT[:3], dtype=np.float32)
     light_diffuse = np.array(LIGHT_DIFFUSE[:3], dtype=np.float32)
     light_specular = np.array([1.0, 1.0, 1.0], dtype=np.float32)
@@ -389,15 +357,15 @@ def draw_phong(estado):
     # Generate vertices based on shape
     shape = estado.shape
     if shape == 'sphere':
-        pos_list, norm_list = generate_sphere_triangles(20, 20)
+        pos_list, norm_list = generate_sphere_triangles(32, 32)
     elif shape == 'cube':
         pos_list, norm_list = generate_cube_triangles()
     elif shape == 'torus':
-        pos_list, norm_list = generate_torus_triangles(16, 32)
+        pos_list, norm_list = generate_torus_triangles(24, 48)
     elif shape == 'pyramid':
         pos_list, norm_list = generate_pyramid_triangles()
     else:
-        pos_list, norm_list = generate_sphere_triangles(20, 20)  # Default to sphere
+        pos_list, norm_list = generate_sphere_triangles(32, 32)  # Default to sphere
     
     # Create numpy arrays
     pos_data = np.array(pos_list, dtype=np.float32)
@@ -427,12 +395,15 @@ def draw_phong(estado):
     glVertexAttribPointer(norm_loc, 3, GL_FLOAT, GL_FALSE, 0, None)
     
     # Draw
-    glDrawArrays(GL_TRIANGLES, 0, len(pos_data) // 3)
+    glDrawArrays(GL_TRIANGLES, 0, len(pos_data))
     
     # Clean up
     glDisableVertexAttribArray(pos_loc)
     glDisableVertexAttribArray(norm_loc)
     glDeleteBuffers(2, [vbo_pos, vbo_norm])
+    
+    # Re-enable culling after draw
+    glEnable(GL_CULL_FACE)
 
 def get_name():
     """Return the display name of this lighting model."""

@@ -89,20 +89,20 @@ def draw_shape(shape_name='sphere', material_name='orange'):
     """Draw the specified shape with the given material"""
     # Import shape modules dynamically
     if shape_name == 'sphere':
-        import Sphere
+        from Object import Sphere
         Sphere.draw_sphere(MATERIAL_COLORS, material_name)
     elif shape_name == 'cube':
-        import Cube
+        from Object import Cube
         Cube.draw_cube(MATERIAL_COLORS, material_name)
     elif shape_name == 'torus':
-        import Torus
+        from Object import Torus
         Torus.draw_torus(MATERIAL_COLORS, material_name)
     elif shape_name == 'pyramid':
-        import Pyramid
+        from Object import Pyramid
         Pyramid.draw_pyramid(MATERIAL_COLORS, material_name)
     else:
         # Default to sphere
-        import Sphere
+        from Object import Sphere
         Sphere.draw_sphere(MATERIAL_COLORS, material_name)
 
 # Keep old function for backward compatibility
@@ -115,21 +115,21 @@ def update_light(estado):
 def set_lighting_model(model_name='gouraud'):
     """
     Configura o modelo de iluminação (flat, gouraud ou phong)
-    
+
     Args:
         model_name: Nome do modelo ('flat', 'gouraud', ou 'phong')
     """
     if model_name == 'phong':
         return  # Handled separately in render_3d_to_texture
     if model_name == 'flat':
-        import LightingFlat
+        from Light import LightingFlat
         LightingFlat.enable()
     elif model_name == 'gouraud':
-        import LightingGouraud
+        from Light import LightingGouraud
         LightingGouraud.enable()
     else:
         # Default to Gouraud
-        import LightingGouraud
+        from Light import LightingGouraud
         LightingGouraud.enable()
 
 def render_3d_to_texture(estado, fbo):
@@ -159,10 +159,10 @@ def render_3d_to_texture(estado, fbo):
         gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Default front
 
     update_light(estado)
-    
+
     # Handle lighting and drawing
     if estado.lighting_model == 'phong':
-        import LightingPhong
+        from Light import LightingPhong
         LightingPhong.enable(estado)
         LightingPhong.draw_phong(estado)
         LightingPhong.disable()
