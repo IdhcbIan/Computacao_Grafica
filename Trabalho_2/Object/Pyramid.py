@@ -14,7 +14,7 @@ def draw_pyramid(material_colors, material_name='orange'):
     glMaterialf(GL_FRONT, GL_SHININESS, material['shininess'])
 
     # Pyramid vertices
-    apex = [0, -1.5, 0]  # Now pointing downward
+    apex = [0, -1.5, 0]  # Pointing downward is inverted!! y axis is oposite for rendererd in CG!!
     base = [
         [-1, 1, 1],   # Front left (top)
         [1, 1, 1],    # Front right
@@ -24,7 +24,7 @@ def draw_pyramid(material_colors, material_name='orange'):
 
     # Draw base (square)
     glBegin(GL_QUADS)
-    glNormal3f(0, 1, 0)  # Normal pointing up
+    glNormal3f(0, 1, 0)  
     for vertex in base:
         glVertex3fv(vertex)
     glEnd()
@@ -59,5 +59,4 @@ def draw_pyramid(material_colors, material_name='orange'):
     glEnd()
 
 def get_name():
-    """Return the display name of this shape"""
     return "Pyramid"

@@ -13,11 +13,11 @@ def draw_cube(material_colors, material_name='orange'):
     
     # Define cube vertices
     vertices = [
-        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],  # Back face
-        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]       # Front face
+        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],  
+        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]       
     ]
     
-    # Define faces (each face has 4 vertices)
+    # Define faces (each face has 4 vertices for the CUBE!!)
     faces = [
         [0, 1, 2, 3],  # Back
         [4, 5, 6, 7],  # Front
@@ -27,7 +27,7 @@ def draw_cube(material_colors, material_name='orange'):
         [1, 2, 6, 5]   # Right
     ]
     
-    # Face normals
+    # Face normals (For direction!!)
     normals = [
         [0, 0, -1],   # Back
         [0, 0, 1],    # Front
@@ -45,6 +45,5 @@ def draw_cube(material_colors, material_name='orange'):
     glEnd()
 
 def get_name():
-    """Return the display name of this shape"""
     return "Cube"
 

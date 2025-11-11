@@ -3,22 +3,20 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import math
-import numpy as np  # For array handling in FBO
+import numpy as np  
 
-# Constants similar to Aux.py
+# Constants 
 LARGURA_JANELA = 800
 ALTURA_JANELA = 600
 FPS = 60
-LARGURA_3D = 600  # Width of embedded 3D panel
-ALTURA_3D = 500   # Height of embedded 3D panel
+LARGURA_3D = 600  
+ALTURA_3D = 500  
 
-# Colors for materials (adaptable)
+# Colors for materials
 MATERIAL_COLORS = {
     'orange': {'ambient': [0.2, 0.1, 0.05, 1.0], 'diffuse': [1.0, 0.5, 0.2, 1.0], 'specular': [1.0, 1.0, 1.0, 1.0], 'shininess': 50.0},
     'red': {'ambient': [0.2, 0.0, 0.0, 1.0], 'diffuse': [0.8, 0.2, 0.2, 1.0], 'specular': [1.0, 1.0, 1.0, 1.0], 'shininess': 30.0},
-    'blue': {'ambient': [0.0, 0.0, 0.2, 1.0], 'diffuse': [0.2, 0.2, 0.8, 1.0], 'specular': [1.0, 1.0, 1.0, 1.0], 'shininess': 50.0},
-    # Add more as needed
-}
+    'blue': {'ambient': [0.0, 0.0, 0.2, 1.0], 'diffuse': [0.2, 0.2, 0.8, 1.0], 'specular': [1.0, 1.0, 1.0, 1.0], 'shininess': 50.0},}
 
 LIGHT_AMBIENT = [0.2, 0.2, 0.2, 1.0]
 LIGHT_DIFFUSE = [1.0, 1.0, 1.0, 1.0]
@@ -27,9 +25,9 @@ class Estado3D:
     def __init__(self):
         self.light_pos = [3.0, 3.0, 3.0, 1.0]
         self.material = 'orange'
-        self.shape = 'sphere'  # Current shape: 'sphere', 'cube', 'torus', 'pyramid'
-        self.camera_angle = 'front'  # Camera angles: 'front', 'top', 'side', 'diagonal'
-        self.lighting_model = 'gouraud'  # Lighting models: 'flat', 'gouraud', 'phong'
+        self.shape = 'sphere'  # Shape that apears on initialization!!
+        self.camera_angle = 'front'  # Defaut Camera angle!!
+        self.lighting_model = 'gouraud'  # Default Lighting model
         self.running = True
 
 class FBO:
@@ -112,15 +110,14 @@ def draw_sphere(material_name='orange'):
 def update_light(estado):
     glLightfv(GL_LIGHT0, GL_POSITION, estado.light_pos)
 
-def set_lighting_model(model_name='gouraud'):
+def set_lighting_model(model_name='gouraud'):  # Defaut Shading = gouraud!!
     """
     Configura o modelo de iluminação (flat, gouraud ou phong)
-
-    Args:
-        model_name: Nome do modelo ('flat', 'gouraud', ou 'phong')
+    
+    So um ifelse normal!!
     """
     if model_name == 'phong':
-        return  # Handled separately in render_3d_to_texture
+        return  # Handled separately because of custom OpenGL implementation!!
     if model_name == 'flat':
         from Light import LightingFlat
         LightingFlat.enable()
@@ -128,13 +125,12 @@ def set_lighting_model(model_name='gouraud'):
         from Light import LightingGouraud
         LightingGouraud.enable()
     else:
-        # Default to Gouraud
         from Light import LightingGouraud
         LightingGouraud.enable()
 
 def render_3d_to_texture(estado, fbo):
     fbo.bind()
-    glClearColor(0.1, 0.1, 0.2, 1.0)  # Dark background for 3D
+    glClearColor(0.1, 0.1, 0.2, 1.0)  # Dark background!!
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Set up projection matrix
@@ -142,7 +138,7 @@ def render_3d_to_texture(estado, fbo):
     glLoadIdentity()
     gluPerspective(45, LARGURA_3D / ALTURA_3D, 0.1, 50.0)
 
-    # Set up modelview matrix with camera position based on angle
+    # Set up modelview matrix with camera position
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 

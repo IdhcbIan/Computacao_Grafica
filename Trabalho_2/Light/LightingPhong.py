@@ -1,8 +1,7 @@
 """
-Phong Shading Implementation - From Scratch
-Implements true per-fragment Phong lighting using modern GLSL shaders with VBO rendering.
-Supports all shapes: sphere, cube, torus, pyramid.
+Phong Shading Implementation
 """
+
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
@@ -78,7 +77,6 @@ void main() {
 def compile_phong_shaders():
     """
     Compiles the vertex and fragment shaders for Phong shading.
-    Returns the compiled program ID or None if compilation fails.
     """
     try:
         vertex_shader = compileShader(VERTEX_SHADER_SOURCE, GL_VERTEX_SHADER)
@@ -93,7 +91,6 @@ def compile_phong_shaders():
 def enable(estado=None):
     """
     Enables the Phong shader program.
-    Compiles the shaders if not already done.
     """
     global shaderprogram
     if shaderprogram is None:
@@ -120,8 +117,6 @@ def generate_sphere_triangles(slices=32, stacks=32):
     """
     Generates vertex positions and normals for a unit sphere using triangles.
     Returns lists of [x,y,z] for positions and normals.
-    Fixed: Ensured counter-clockwise winding for outer-facing triangles.
-    Increased resolution for fuller appearance.
     """
     pos = []
     norm = []
@@ -153,7 +148,6 @@ def generate_cube_triangles():
     """
     Generates vertex positions and normals for a cube using triangles (duplicated verts for flat shading).
     Returns lists of [x,y,z] for positions and normals.
-    Fixed: Corrected vertex orders to ensure counter-clockwise winding when viewed from outside.
     """
     pos = []
     norm = []
@@ -202,7 +196,6 @@ def generate_torus_triangles(rings=24, sides=48):
     """
     Generates vertex positions and normals for a torus using triangles.
     Returns lists of [x,y,z] for positions and normals.
-    Fixed: Clean triangle list with consistent CCW winding; removed buggy code; increased resolution.
     """
     pos = []
     norm = []
@@ -249,7 +242,6 @@ def generate_pyramid_triangles():
     """
     Generates vertex positions and normals for a pyramid using triangles.
     Returns lists of [x,y,z] for positions and normals.
-    Fixed: Reversed base triangles for outward-facing (CCW from above); ensured side triangles CCW from outside.
     """
     pos = []
     norm = []
@@ -287,8 +279,6 @@ def generate_pyramid_triangles():
 def draw_phong(estado):
     """
     Draws the selected shape using Phong shader with VBO rendering.
-    Uses the current OpenGL matrices and estado for light and material.
-    Fixed: Disabled backface culling to ensure all faces visible; increased resolutions.
     """
     global shaderprogram
     if not shaderprogram:
@@ -410,5 +400,4 @@ def get_name():
     return "Phong"
 
 def get_description():
-    """Return a description of this lighting model."""
     return "True per-fragment Phong lighting with VBO-based rendering"

@@ -1,5 +1,5 @@
 """
-Torus (donut) shape module for 3D rendering
+Torus (donut) shape!!
 """
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -13,13 +13,13 @@ def draw_torus(material_colors, material_name='orange'):
     glMaterialfv(GL_FRONT, GL_SPECULAR, material['specular'])
     glMaterialf(GL_FRONT, GL_SHININESS, material['shininess'])
     
-    # Torus parameters
+    # Parameters
     inner_radius = 0.4
     outer_radius = 1.0
     sides = 32
     rings = 32
     
-    # Draw torus manually (since glutSolidTorus might not be available)
+    # Draw torus!!
     for i in range(rings):
         glBegin(GL_QUAD_STRIP)
         for j in range(sides + 1):
@@ -46,6 +46,5 @@ def draw_torus(material_colors, material_name='orange'):
         glEnd()
 
 def get_name():
-    """Return the display name of this shape"""
     return "Torus"
 

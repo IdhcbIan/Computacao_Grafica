@@ -10,12 +10,12 @@ from Aux_3D import (Estado3D, init_opengl, draw_sphere, update_light, render_3d_
 
 # Layout constants
 MARGEM = 15
-LARGURA_GUI = 480  # Expanded from 200 to 480 for much better space
+LARGURA_GUI = 480  
 LIGHT_STEP = 0.5
 BUTTON_REPEAT_DELAY = 300
 BUTTON_REPEAT_INTERVAL = 50
 
-# Color scheme - Modern and clean
+# Colors
 COLOR_SCHEME = {
     'bg': (250, 251, 253),
     'panel': (255, 255, 255),
@@ -32,15 +32,15 @@ COLOR_SCHEME = {
     'divider': (210, 220, 235),
 }
 
-# Button layout - using full width (480px) with better organization
+# Buttons!!
 def create_buttons():
     buttons = []
     margin = MARGEM
-    width = LARGURA_GUI - 2 * margin  # ~450px usable width
+    width = LARGURA_GUI - 2 * margin
 
-    # Row 1: Shape selector buttons (4 buttons in one row)
+    # Shape selector buttons
     y_start = 55
-    btn_w = (width - 3 * 8) // 4  # 4 buttons with gaps
+    btn_w = (width - 3 * 8) // 4  
     btn_h = 40
     spacing = 8
     buttons.extend([
@@ -50,7 +50,7 @@ def create_buttons():
         {"texto": "Pyramid", "rect": pygame.Rect(margin + 3 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "pyramid", "tipo": "shape"},
     ])
 
-    # Row 2: Camera angle buttons (4 buttons in one row)
+    # Camera angle buttons 
     y_start = 120
     btn_h = 38
     buttons.extend([
@@ -60,7 +60,7 @@ def create_buttons():
         {"texto": "Diagonal", "rect": pygame.Rect(margin + 3 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "diagonal", "tipo": "camera"},
     ])
 
-    # Row 3: Lighting model buttons (3 buttons in one row)
+    # Lighting model buttons
     y_start = 185
     btn_h = 38
     btn_w_light = (width - 2 * spacing) // 3
@@ -70,7 +70,7 @@ def create_buttons():
         {"texto": "Phong", "rect": pygame.Rect(margin + 2 * (btn_w_light + spacing), y_start, btn_w_light, btn_h), "acao": "phong", "tipo": "lighting"},
     ])
 
-    # Row 4: Material color buttons (3 swatches, centered and spacious)
+    # Material color buttons 
     y_start = 250
     swatch_size = 50
     swatch_spacing = (width - 3 * swatch_size) // 4
@@ -80,7 +80,7 @@ def create_buttons():
         {"texto": "", "rect": pygame.Rect(margin + 3 * swatch_spacing + 2 * swatch_size, y_start, swatch_size, swatch_size), "acao": "blue", "cor": (140, 190, 215)},
     ])
 
-    # Row 5: Light control (cross pattern - nicely centered)
+    # Light control
     y_start = 330
     btn_size = 45
     center_x = margin + width // 2
@@ -92,7 +92,7 @@ def create_buttons():
         {"texto": "↓", "rect": pygame.Rect(center_x - btn_size // 2, y_start + 2 * (btn_size + spacing_light), btn_size, btn_size), "acao": "light_down", "tipo": "light"},
     ])
 
-    # Action buttons at bottom (full width)
+    # Action buttons
     y_start = ALTURA_JANELA - 55
     btn_h = 40
     buttons.extend([
@@ -104,7 +104,6 @@ def create_buttons():
 BOTOES_3D = create_buttons()
 
 def draw_section_header(surface, font, text, y_pos):
-    """Draw a subtle section header with improved styling"""
     margin = MARGEM
     width = LARGURA_GUI - 2 * margin
     text_surf = font.render(text, True, COLOR_SCHEME['accent'])
@@ -113,7 +112,6 @@ def draw_section_header(surface, font, text, y_pos):
     pygame.draw.line(surface, COLOR_SCHEME['divider'], (margin, y_pos + 20), (margin + width, y_pos + 20), 1)
 
 def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_atual, camera_atual, lighting_atual):
-    """Draw all GUI buttons and headers with improved styling"""
     gui_surface.fill(COLOR_SCHEME['bg'])
 
     # Section headers - new positions for wider layout
@@ -164,7 +162,6 @@ def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_a
             gui_surface.blit(texto_render, texto_rect)
 
 def desenhar_hud(gui_surface, font_small, font_tiny, estado):
-    """Draw info panel at bottom with improved styling"""
     margin = MARGEM
     width = LARGURA_GUI - 2 * margin
     info_rect = pygame.Rect(margin, ALTURA_JANELA - 50, width, 38)
@@ -190,7 +187,7 @@ def desenhar_hud(gui_surface, font_small, font_tiny, estado):
         gui_surface.blit(value_surf, (x, y + 14))
 
 def run_3d_window(cmd_queue, state_queue=None):
-    """Process for the 3D rendering window."""
+    """Process for 3D rendering window!!"""
     pygame.init()
     # 3D window with OpenGL context and resizable flag
     screen_3d = pygame.display.set_mode((LARGURA_3D, ALTURA_3D), pygame.OPENGL | pygame.DOUBLEBUF | pygame.RESIZABLE)
@@ -300,7 +297,7 @@ def run_3d_window(cmd_queue, state_queue=None):
         # Render 3D scene offscreen to FBO
         render_3d_to_texture(estado, fbo)
         
-        # Display the FBO texture to screen (scaled to current window size)
+        # Display the FBO texture to screen
         display_fbo_texture(fbo, current_width, current_height)
         
         pygame.display.flip()
@@ -312,23 +309,23 @@ def run_3d_window(cmd_queue, state_queue=None):
 def run_gui_window(cmd_queue, state_queue=None):
     """Process for the GUI controls window."""
     pygame.init()
-    # GUI window - wider for better layout
+    # GUI window 
     screen_gui = pygame.display.set_mode((LARGURA_GUI, ALTURA_JANELA))
     pygame.display.set_caption('3D Controls')
     clock = pygame.time.Clock()
-    font = pygame.font.SysFont("arial", 20, bold=True)  # Larger for arrows and title
-    font_small = pygame.font.SysFont("arial", 12, bold=True)  # Button text
-    font_tiny = pygame.font.SysFont("arial", 10)  # Section headers and info
+    font = pygame.font.SysFont("arial", 20, bold=True)  
+    font_small = pygame.font.SysFont("arial", 12, bold=True)  
+    font_tiny = pygame.font.SysFont("arial", 10)  
     
     # Enable key repeat for arrow keys
     pygame.key.set_repeat(BUTTON_REPEAT_DELAY, BUTTON_REPEAT_INTERVAL)
     
-    estado = Estado3D()  # Local state for display
-    current_width = LARGURA_3D  # Track 3D window size
+    estado = Estado3D()  
+    current_width = LARGURA_3D  
     current_height = ALTURA_3D
     running = True
     
-    # Track mouse button state for click-and-hold
+    # Track mouse (for click and hold functionality!)
     mouse_held_button = None
     mouse_hold_timer = 0
     mouse_hold_started = False
@@ -343,10 +340,10 @@ def run_gui_window(cmd_queue, state_queue=None):
                     running = False
                     cmd_queue.put({'type': 'quit'})
                 elif event.key == K_UP:
-                    estado.light_pos[1] -= LIGHT_STEP  # Inverted: up arrow = decrease Y
+                    estado.light_pos[1] -= LIGHT_STEP  
                     cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                 elif event.key == K_DOWN:
-                    estado.light_pos[1] += LIGHT_STEP  # Inverted: down arrow = increase Y
+                    estado.light_pos[1] += LIGHT_STEP  
                     cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                 elif event.key == K_LEFT:
                     estado.light_pos[0] -= LIGHT_STEP
@@ -355,11 +352,11 @@ def run_gui_window(cmd_queue, state_queue=None):
                     estado.light_pos[0] += LIGHT_STEP
                     cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
             elif event.type == MOUSEBUTTONDOWN:
-                if event.button == 1:  # Left click
+                if event.button == 1:  
                     for botao in BOTOES_3D:
                         if botao["rect"].collidepoint(event.pos):
                             acao = botao["acao"]
-                            # Store button for hold-and-repeat (only for light controls)
+                            # Store button for hold-and-repeat
                             if acao in ["light_up", "light_down", "light_left", "light_right"]:
                                 mouse_held_button = acao
                                 mouse_hold_timer = pygame.time.get_ticks()
@@ -378,10 +375,10 @@ def run_gui_window(cmd_queue, state_queue=None):
                                 estado.material = acao
                                 cmd_queue.put({'type': 'material', 'value': acao})
                             elif acao == "light_up":
-                                estado.light_pos[1] -= LIGHT_STEP  # Inverted: up button = decrease Y
+                                estado.light_pos[1] -= LIGHT_STEP  
                                 cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                             elif acao == "light_down":
-                                estado.light_pos[1] += LIGHT_STEP  # Inverted: down button = increase Y
+                                estado.light_pos[1] += LIGHT_STEP  
                                 cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                             elif acao == "light_left":
                                 estado.light_pos[0] -= LIGHT_STEP
@@ -413,10 +410,10 @@ def run_gui_window(cmd_queue, state_queue=None):
             if mouse_hold_started and (current_time - mouse_hold_timer) >= BUTTON_REPEAT_INTERVAL:
                 mouse_hold_timer = current_time
                 if mouse_held_button == "light_up":
-                    estado.light_pos[1] -= LIGHT_STEP  # Inverted: up = decrease Y
+                    estado.light_pos[1] -= LIGHT_STEP  
                     cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                 elif mouse_held_button == "light_down":
-                    estado.light_pos[1] += LIGHT_STEP  # Inverted: down = increase Y
+                    estado.light_pos[1] += LIGHT_STEP  
                     cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
                 elif mouse_held_button == "light_left":
                     estado.light_pos[0] -= LIGHT_STEP
@@ -459,8 +456,8 @@ def run_gui_window(cmd_queue, state_queue=None):
 
 def main():
     # Create communication queues
-    cmd_queue = mp.Queue()  # GUI -> 3D commands
-    state_queue = mp.Queue()  # 3D -> GUI state updates
+    cmd_queue = mp.Queue()  
+    state_queue = mp.Queue()  
     
     # Spawn processes
     p3d = mp.Process(target=run_3d_window, args=(cmd_queue, state_queue))
@@ -469,12 +466,11 @@ def main():
     p3d.start()
     pgui.start()
     
-    # Wait for processes to finish
     p3d.join()
     pgui.join()
     
     sys.exit()
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')  # Necessary for OpenGL in processes on some platforms
+    mp.set_start_method('spawn')  
     main()

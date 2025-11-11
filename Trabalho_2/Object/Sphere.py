@@ -1,11 +1,12 @@
 """
 Sphere shape module for 3D rendering
+
+Use internal OpenGL Functoion!! diferent from vertice like code for polygons!!
 """
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 def draw_sphere(material_colors, material_name='orange'):
-    """Draw a sphere with the specified material"""
     quadric = gluNewQuadric()
     gluQuadricNormals(quadric, GLU_SMOOTH)
     
@@ -19,6 +20,5 @@ def draw_sphere(material_colors, material_name='orange'):
     gluDeleteQuadric(quadric)
 
 def get_name():
-    """Return the display name of this shape"""
     return "Sphere"
 
