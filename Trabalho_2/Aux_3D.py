@@ -115,19 +115,18 @@ def update_light(estado):
 def set_lighting_model(model_name='gouraud'):
     """
     Configura o modelo de iluminação (flat, gouraud ou phong)
-
+    
     Args:
         model_name: Nome do modelo ('flat', 'gouraud', ou 'phong')
     """
+    if model_name == 'phong':
+        return  # Handled separately in render_3d_to_texture
     if model_name == 'flat':
         import LightingFlat
         LightingFlat.enable()
     elif model_name == 'gouraud':
         import LightingGouraud
         LightingGouraud.enable()
-    elif model_name == 'phong':
-        import LightingPhong
-        LightingPhong.enable()
     else:
         # Default to Gouraud
         import LightingGouraud
@@ -137,9 +136,6 @@ def render_3d_to_texture(estado, fbo):
     fbo.bind()
     glClearColor(0.1, 0.1, 0.2, 1.0)  # Dark background for 3D
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-    # Set lighting model
-    set_lighting_model(estado.lighting_model)
 
     # Set up projection matrix
     glMatrixMode(GL_PROJECTION)
@@ -163,5 +159,15 @@ def render_3d_to_texture(estado, fbo):
         gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Default front
 
     update_light(estado)
-    draw_shape(estado.shape, estado.material)
+    
+    # Handle lighting and drawing
+    if estado.lighting_model == 'phong':
+        import LightingPhong
+        LightingPhong.enable(estado)
+        LightingPhong.draw_phong(estado)
+        LightingPhong.disable()
+    else:
+        set_lighting_model(estado.lighting_model)
+        draw_shape(estado.shape, estado.material)
+    
     fbo.unbind()

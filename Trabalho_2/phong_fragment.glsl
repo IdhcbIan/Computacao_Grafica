@@ -39,7 +39,9 @@ void main() {
     float spec_intensity = 0.0;
     if (diff_intensity > 0.0) {
         // Só calcular especular se a superfície está voltada para a luz
-        spec_intensity = pow(max(dot(R, V), 0.0), gl_FrontMaterial.shininess);
+        // Usar um shininess mínimo para evitar valores muito altos
+        float shininess = max(gl_FrontMaterial.shininess, 4.0);
+        spec_intensity = pow(max(dot(R, V), 0.0), shininess);
     }
     vec3 specular = gl_LightSource[0].specular.rgb *
                     gl_FrontMaterial.specular.rgb *

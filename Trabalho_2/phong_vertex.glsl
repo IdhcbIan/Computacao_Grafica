@@ -10,9 +10,10 @@ void main() {
     // Transformar a posição do vértice para o espaço da tela
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 
-    // Calcular a normal no espaço da câmera (world space)
-    // gl_NormalMatrix é a matriz normal (inversa transposta do ModelView)
-    vertex_normal = normalize(gl_NormalMatrix * gl_Normal);
+    // Calcular a normal no espaço da câmera
+    // Usar a transposta da matriz inversa do ModelView para normais
+    vec3 normal_eye = normalize(vec3(gl_ModelViewMatrix * vec4(gl_Normal, 0.0)));
+    vertex_normal = normal_eye;
 
     // Calcular a posição do vértice no espaço da câmera
     vec4 vertex_in_eye = gl_ModelViewMatrix * gl_Vertex;
