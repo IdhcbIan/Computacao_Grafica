@@ -305,24 +305,41 @@ def draw_phong(estado):
     projection = np.zeros((4, 4), dtype=np.float32)
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview)
     glGetFloatv(GL_PROJECTION_MATRIX, projection)
-    
-    # Convert to row-major for CPU-side calculations
-    modelview_rm = np.transpose(modelview)
-    
-    # Compute normal matrix from the upper-left 3x3 of the row-major modelview
+
+    # OpenGL matrices are column-major. Reshape to 4x4 matrix (already column-major)
+    modelview_mat = modelview.reshape(4, 4)
+
+    # For numpy calculations, we need row-major
+    modelview_rm = modelview_mat.T
+
+    # Compute normal matrix: transpose(inverse(upper-left 3x3))
+    # Extract upper-left 3x3 from row-major version
     modelview_3x3 = modelview_rm[:3, :3]
-    normal_mat = np.linalg.inv(modelview_3x3)
-    normal_mat = np.transpose(normal_mat).astype(np.float32)
-    
-    # Set matrix uniforms
+    # Compute transpose(inverse(M)) which equals inverse(M).T
+    normal_mat_rm = np.linalg.inv(modelview_3x3).T
+    # Convert back to column-major for OpenGL
+    normal_mat = normal_mat_rm.T.astype(np.float32)
+
+    # Set matrix uniforms (all matrices should be in column-major format for OpenGL)
     glUniformMatrix4fv(modelView_loc, 1, GL_FALSE, modelview)
     glUniformMatrix4fv(projection_loc, 1, GL_FALSE, projection)
-    glUniformMatrix3fv(normalMatrix_loc, 1, GL_FALSE, normal_mat)
-    
-    # Light properties
+    glUniformMatrix3fv(normalMatrix_loc, 1, GL_FALSE, normal_mat.flatten())
+
+    # Light properties - transform light position from world to view space
+    # In the fixed-function pipeline (Flat/Gouraud), glLightfv transforms the light
+    # position by the current modelview matrix. We need to replicate that here.
     light_pos_world = np.array(estado.light_pos, dtype=np.float32)
-    light_pos_view = modelview_rm @ light_pos_world
-    light_pos = np.array(light_pos_view[:3], dtype=np.float32)
+
+    # Transform using the modelview matrix (column-major from OpenGL)
+    # Reshape and transpose to get row-major, then multiply
+    # For a point light (w=1), this transforms it to view space
+    light_pos_view_homogeneous = modelview_rm @ light_pos_world
+
+    # Extract xyz and normalize if it's a directional light, or just take xyz for point light
+    if light_pos_world[3] != 0.0:  # Point light
+        light_pos = (light_pos_view_homogeneous[:3] / light_pos_view_homogeneous[3]).astype(np.float32)
+    else:  # Directional light
+        light_pos = light_pos_view_homogeneous[:3].astype(np.float32)
     light_ambient = np.array(LIGHT_AMBIENT[:3], dtype=np.float32)
     light_diffuse = np.array(LIGHT_DIFFUSE[:3], dtype=np.float32)
     light_specular = np.array([1.0, 1.0, 1.0], dtype=np.float32)
