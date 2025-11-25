@@ -1,3 +1,20 @@
+"""
+._____. ._____.
+| ._. | | ._. |
+| !_| |_|_|_! |
+!___| |_______!
+.___|_|_| |___.
+| ._____| |_. |
+| !_! | | !_! |
+!_____! !_____!
+
+// Trabalho 2 - Computacao Grafica //
+
+- Ian Bezerra 
+- Julia Ortiz
+"""
+
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame
@@ -6,7 +23,8 @@ import sys
 import multiprocessing as mp
 
 from Aux_3D import (Estado3D, init_opengl, draw_sphere, update_light, render_3d_to_texture, FBO,
-                   LARGURA_JANELA, ALTURA_JANELA, FPS, MATERIAL_COLORS, LARGURA_3D, ALTURA_3D, set_lighting_model)
+                   LARGURA_JANELA, ALTURA_JANELA, FPS, MATERIAL_COLORS, LARGURA_3D, ALTURA_3D, set_lighting_model,
+                   ROTATION_STEP, TRANSLATION_STEP)
 
 # Layout constants
 MARGEM = 15
@@ -39,9 +57,9 @@ def create_buttons():
     width = LARGURA_GUI - 2 * margin
 
     # Shape selector buttons
-    y_start = 55
-    btn_w = (width - 3 * 8) // 4  
-    btn_h = 40
+    y_start = 50
+    btn_w = (width - 3 * 8) // 4
+    btn_h = 36
     spacing = 8
     buttons.extend([
         {"texto": "Sphere", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "sphere", "tipo": "shape"},
@@ -50,9 +68,9 @@ def create_buttons():
         {"texto": "Pyramid", "rect": pygame.Rect(margin + 3 * (btn_w + spacing), y_start, btn_w, btn_h), "acao": "pyramid", "tipo": "shape"},
     ])
 
-    # Camera angle buttons 
-    y_start = 120
-    btn_h = 38
+    # Camera angle buttons
+    y_start = 108
+    btn_h = 34
     buttons.extend([
         {"texto": "Front", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "front", "tipo": "camera"},
         {"texto": "Top", "rect": pygame.Rect(margin + btn_w + spacing, y_start, btn_w, btn_h), "acao": "top", "tipo": "camera"},
@@ -61,8 +79,8 @@ def create_buttons():
     ])
 
     # Lighting model buttons
-    y_start = 185
-    btn_h = 38
+    y_start = 162
+    btn_h = 34
     btn_w_light = (width - 2 * spacing) // 3
     buttons.extend([
         {"texto": "Flat", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "flat", "tipo": "lighting"},
@@ -70,9 +88,9 @@ def create_buttons():
         {"texto": "Phong", "rect": pygame.Rect(margin + 2 * (btn_w_light + spacing), y_start, btn_w_light, btn_h), "acao": "phong", "tipo": "lighting"},
     ])
 
-    # Material color buttons 
-    y_start = 250
-    swatch_size = 50
+    # Material color buttons
+    y_start = 216
+    swatch_size = 45
     swatch_spacing = (width - 3 * swatch_size) // 4
     buttons.extend([
         {"texto": "", "rect": pygame.Rect(margin + swatch_spacing, y_start, swatch_size, swatch_size), "acao": "orange", "cor": (255, 127, 0)},
@@ -81,15 +99,48 @@ def create_buttons():
     ])
 
     # Light control
-    y_start = 330
-    btn_size = 45
+    y_start = 283
+    btn_size = 35
     center_x = margin + width // 2
-    spacing_light = 12
+    spacing_light = 10
     buttons.extend([
         {"texto": "↑", "rect": pygame.Rect(center_x - btn_size // 2, y_start, btn_size, btn_size), "acao": "light_up", "tipo": "light"},
         {"texto": "←", "rect": pygame.Rect(center_x - btn_size - spacing_light, y_start + btn_size + spacing_light, btn_size, btn_size), "acao": "light_left", "tipo": "light"},
         {"texto": "→", "rect": pygame.Rect(center_x + spacing_light, y_start + btn_size + spacing_light, btn_size, btn_size), "acao": "light_right", "tipo": "light"},
         {"texto": "↓", "rect": pygame.Rect(center_x - btn_size // 2, y_start + 2 * (btn_size + spacing_light), btn_size, btn_size), "acao": "light_down", "tipo": "light"},
+    ])
+
+    # Transformation controls
+    y_start = 410
+    btn_w_small = 45
+    btn_w_label = width - 2 * btn_w_small - 2 * spacing
+    btn_h_trans = 26
+    y_spacing = 4
+
+    # Rotation controls
+    for idx, axis in enumerate(['x', 'y', 'z']):
+        y_pos = y_start + idx * (btn_h_trans + y_spacing)
+        buttons.extend([
+            {"texto": "-", "rect": pygame.Rect(margin, y_pos, btn_w_small, btn_h_trans), "acao": f"rot_{axis}_dec", "tipo": "transform"},
+            {"texto": f"Rot {axis.upper()}", "rect": pygame.Rect(margin + btn_w_small + spacing, y_pos, btn_w_label, btn_h_trans), "acao": f"rot_{axis}_label", "tipo": "label"},
+            {"texto": "+", "rect": pygame.Rect(margin + btn_w_small + btn_w_label + 2 * spacing, y_pos, btn_w_small, btn_h_trans), "acao": f"rot_{axis}_inc", "tipo": "transform"},
+        ])
+
+    # Translation controls
+    y_start = 510
+    for idx, axis in enumerate(['x', 'y', 'z']):
+        y_pos = y_start + idx * (btn_h_trans + y_spacing)
+        buttons.extend([
+            {"texto": "-", "rect": pygame.Rect(margin, y_pos, btn_w_small, btn_h_trans), "acao": f"trans_{axis}_dec", "tipo": "transform"},
+            {"texto": f"Pos {axis.upper()}", "rect": pygame.Rect(margin + btn_w_small + spacing, y_pos, btn_w_label, btn_h_trans), "acao": f"trans_{axis}_label", "tipo": "label"},
+            {"texto": "+", "rect": pygame.Rect(margin + btn_w_small + btn_w_label + 2 * spacing, y_pos, btn_w_small, btn_h_trans), "acao": f"trans_{axis}_inc", "tipo": "transform"},
+        ])
+
+    # Reset transformation button
+    y_start = 610
+    btn_h = 30
+    buttons.extend([
+        {"texto": "Reset Transform", "rect": pygame.Rect(margin, y_start, width, btn_h), "acao": "reset_transform", "tipo": "transform"},
     ])
 
     # Action buttons
@@ -111,26 +162,60 @@ def draw_section_header(surface, font, text, y_pos):
     # Subtle underline
     pygame.draw.line(surface, COLOR_SCHEME['divider'], (margin, y_pos + 20), (margin + width, y_pos + 20), 1)
 
-def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_atual, camera_atual, lighting_atual):
+def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_atual, camera_atual, lighting_atual, estado):
     gui_surface.fill(COLOR_SCHEME['bg'])
 
-    # Section headers - new positions for wider layout
-    draw_section_header(gui_surface, font_tiny, "SHAPES", 30)
-    draw_section_header(gui_surface, font_tiny, "CAMERA", 105)
-    draw_section_header(gui_surface, font_tiny, "LIGHTING", 165)
-    draw_section_header(gui_surface, font_tiny, "MATERIAL", 235)
-    draw_section_header(gui_surface, font_tiny, "LIGHT POSITION", 315)
+    # Section headers
+    draw_section_header(gui_surface, font_tiny, "SHAPES", 28)
+    draw_section_header(gui_surface, font_tiny, "CAMERA", 90)
+    draw_section_header(gui_surface, font_tiny, "LIGHTING", 144)
+    draw_section_header(gui_surface, font_tiny, "MATERIAL", 198)
+    draw_section_header(gui_surface, font_tiny, "LIGHT POSITION", 265)
+    draw_section_header(gui_surface, font_tiny, "ROTATION", 395)
+    draw_section_header(gui_surface, font_tiny, "TRANSLATION", 495)
     
     # Draw buttons
     for botao in BOTOES_3D:
         if "cor" in botao:
             # Material color swatches with nice styling
             pygame.draw.rect(gui_surface, botao["cor"], botao["rect"], border_radius=10)
-            
+
             # Border based on selection
             border_color = COLOR_SCHEME['selected_border'] if botao["acao"] == cor_atual else COLOR_SCHEME['border']
             border_width = 4 if botao["acao"] == cor_atual else 2
             pygame.draw.rect(gui_surface, border_color, botao["rect"], width=border_width, border_radius=10)
+        elif botao.get("tipo") == "label":
+            # Label buttons showing transformation values
+            bg_color = COLOR_SCHEME['panel_alt']
+            pygame.draw.rect(gui_surface, bg_color, botao["rect"], border_radius=6)
+            pygame.draw.rect(gui_surface, COLOR_SCHEME['border'], botao["rect"], width=1, border_radius=6)
+
+            # Extract axis and type from action
+            acao = botao["acao"]
+            if "rot_" in acao:
+                axis = acao.split("_")[1]
+                if axis == 'x':
+                    value = estado.rotation_x
+                elif axis == 'y':
+                    value = estado.rotation_y
+                else:
+                    value = estado.rotation_z
+                texto_display = f"{botao['texto']}: {value:.0f}°"
+            elif "trans_" in acao:
+                axis = acao.split("_")[1]
+                if axis == 'x':
+                    value = estado.translation_x
+                elif axis == 'y':
+                    value = estado.translation_y
+                else:
+                    value = estado.translation_z
+                texto_display = f"{botao['texto']}: {value:.1f}"
+            else:
+                texto_display = botao["texto"]
+
+            texto_render = font_tiny.render(texto_display, True, COLOR_SCHEME['text'])
+            texto_rect = texto_render.get_rect(center=botao["rect"].center)
+            gui_surface.blit(texto_render, texto_rect)
         else:
             # Regular buttons with improved styling
             is_selected = (
@@ -139,7 +224,7 @@ def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_a
                 (botao.get("tipo") == "lighting" and botao["acao"] == lighting_atual)
             )
 
-            # Button background with gradient effect
+            # Button background
             if is_selected:
                 bg_color = COLOR_SCHEME['selected']
                 border_color = COLOR_SCHEME['selected_border']
@@ -148,7 +233,7 @@ def desenhar_botoes(gui_surface, font, font_small, font_tiny, cor_atual, shape_a
                 bg_color = COLOR_SCHEME['button']
                 border_color = COLOR_SCHEME['border']
                 border_width = 1
-            
+
             pygame.draw.rect(gui_surface, bg_color, botao["rect"], border_radius=8)
             pygame.draw.rect(gui_surface, border_color, botao["rect"], width=int(border_width), border_radius=8)
 
@@ -219,7 +304,7 @@ def run_3d_window(cmd_queue, state_queue=None):
         
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(0, width, 0, height, -1, 1)  # Changed: 0 at bottom, height at top
+        glOrtho(0, width, 0, height, -1, 1)  
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         
@@ -281,6 +366,29 @@ def run_3d_window(cmd_queue, state_queue=None):
                     estado.camera_angle = cmd['value']
                 elif cmd['type'] == 'lighting':
                     estado.lighting_model = cmd['value']
+                elif cmd['type'] == 'rotation':
+                    axis = cmd['axis']
+                    if axis == 'x':
+                        estado.rotation_x = cmd['value']
+                    elif axis == 'y':
+                        estado.rotation_y = cmd['value']
+                    elif axis == 'z':
+                        estado.rotation_z = cmd['value']
+                elif cmd['type'] == 'translation':
+                    axis = cmd['axis']
+                    if axis == 'x':
+                        estado.translation_x = cmd['value']
+                    elif axis == 'y':
+                        estado.translation_y = cmd['value']
+                    elif axis == 'z':
+                        estado.translation_z = cmd['value']
+                elif cmd['type'] == 'reset_transform':
+                    estado.rotation_x = 0.0
+                    estado.rotation_y = 0.0
+                    estado.rotation_z = 0.0
+                    estado.translation_x = 0.0
+                    estado.translation_y = 0.0
+                    estado.translation_z = 0.0
                 elif cmd['type'] == 'rerender':
                     # Recreate FBO with new size if provided
                     new_width = cmd.get('width', current_width)
@@ -386,6 +494,50 @@ def run_gui_window(cmd_queue, state_queue=None):
                             elif acao == "light_right":
                                 estado.light_pos[0] += LIGHT_STEP
                                 cmd_queue.put({'type': 'light_pos', 'value': list(estado.light_pos)})
+                            elif acao == "rot_x_inc":
+                                estado.rotation_x += ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'x', 'value': estado.rotation_x})
+                            elif acao == "rot_x_dec":
+                                estado.rotation_x -= ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'x', 'value': estado.rotation_x})
+                            elif acao == "rot_y_inc":
+                                estado.rotation_y += ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'y', 'value': estado.rotation_y})
+                            elif acao == "rot_y_dec":
+                                estado.rotation_y -= ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'y', 'value': estado.rotation_y})
+                            elif acao == "rot_z_inc":
+                                estado.rotation_z += ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'z', 'value': estado.rotation_z})
+                            elif acao == "rot_z_dec":
+                                estado.rotation_z -= ROTATION_STEP
+                                cmd_queue.put({'type': 'rotation', 'axis': 'z', 'value': estado.rotation_z})
+                            elif acao == "trans_x_inc":
+                                estado.translation_x += TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'x', 'value': estado.translation_x})
+                            elif acao == "trans_x_dec":
+                                estado.translation_x -= TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'x', 'value': estado.translation_x})
+                            elif acao == "trans_y_inc":
+                                estado.translation_y += TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'y', 'value': estado.translation_y})
+                            elif acao == "trans_y_dec":
+                                estado.translation_y -= TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'y', 'value': estado.translation_y})
+                            elif acao == "trans_z_inc":
+                                estado.translation_z += TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'z', 'value': estado.translation_z})
+                            elif acao == "trans_z_dec":
+                                estado.translation_z -= TRANSLATION_STEP
+                                cmd_queue.put({'type': 'translation', 'axis': 'z', 'value': estado.translation_z})
+                            elif acao == "reset_transform":
+                                estado.rotation_x = 0.0
+                                estado.rotation_y = 0.0
+                                estado.rotation_z = 0.0
+                                estado.translation_x = 0.0
+                                estado.translation_y = 0.0
+                                estado.translation_z = 0.0
+                                cmd_queue.put({'type': 'reset_transform'})
                             elif acao == "rerender":
                                 # Send re-render command with current window size
                                 cmd_queue.put({'type': 'rerender', 'width': current_width, 'height': current_height})
@@ -445,7 +597,7 @@ def run_gui_window(cmd_queue, state_queue=None):
         screen_gui.blit(title_surf, title_rect_centered)
         
         # Draw GUI controls
-        desenhar_botoes(screen_gui, font, font_small, font_tiny, estado.material, estado.shape, estado.camera_angle, estado.lighting_model)
+        desenhar_botoes(screen_gui, font, font_small, font_tiny, estado.material, estado.shape, estado.camera_angle, estado.lighting_model, estado)
         desenhar_hud(screen_gui, font_small, font_tiny, estado)
         
         pygame.display.flip()

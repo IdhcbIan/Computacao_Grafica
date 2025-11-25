@@ -1,9 +1,6 @@
 """
 Flat Shading Implementation
 
-Flat shading calculates the lighting once per polygon face.
-All pixels in a face receive the same color, creating a faceted appearance.
-
 In OpenGL: GL_FLAT shading model
 """
 from OpenGL.GL import *

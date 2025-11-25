@@ -1,9 +1,6 @@
 """
 Gouraud Shading Implementation
 
-Gouraud shading calculates lighting at each vertex, then interpolates
-the colors across the face.
-
 In OpenGL: GL_SMOOTH shading model
 """
 from OpenGL.GL import *

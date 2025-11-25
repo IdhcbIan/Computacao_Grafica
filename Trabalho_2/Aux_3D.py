@@ -5,12 +5,16 @@ from OpenGL.GLU import *
 import math
 import numpy as np  
 
-# Constants 
+# Constants
 LARGURA_JANELA = 800
-ALTURA_JANELA = 600
+ALTURA_JANELA = 850  
 FPS = 60
-LARGURA_3D = 600  
-ALTURA_3D = 500  
+LARGURA_3D = 600
+ALTURA_3D = 500
+
+# Transformation step sizes
+ROTATION_STEP = 5.0  # degrees
+TRANSLATION_STEP = 0.2  # units  
 
 # Colors for materials
 MATERIAL_COLORS = {
@@ -29,6 +33,13 @@ class Estado3D:
         self.camera_angle = 'front'  # Defaut Camera angle!!
         self.lighting_model = 'gouraud'  # Default Lighting model
         self.running = True
+        # 3D Transformations
+        self.rotation_x = 0.0
+        self.rotation_y = 0.0
+        self.rotation_z = 0.0
+        self.translation_x = 0.0
+        self.translation_y = 0.0
+        self.translation_z = 0.0
 
 class FBO:
     def __init__(self, width, height):
@@ -154,7 +165,14 @@ def render_3d_to_texture(estado, fbo):
     else:
         gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Default front
 
+    # Set light position BEFORE transformations!!
     update_light(estado)
+
+    # Apply 3D transformations to the object!!
+    glTranslatef(estado.translation_x, estado.translation_y, estado.translation_z)
+    glRotatef(estado.rotation_x, 1, 0, 0)
+    glRotatef(estado.rotation_y, 0, 1, 0)
+    glRotatef(estado.rotation_z, 0, 0, 1)
 
     # Handle lighting and drawing
     if estado.lighting_model == 'phong':
