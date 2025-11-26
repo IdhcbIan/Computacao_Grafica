@@ -126,20 +126,17 @@ def update_light(estado):
     glLightfv(GL_LIGHT0, GL_POSITION, estado.light_pos)
 
 def aplica_transformacao(estado):
-    passo = 0.2 # unidades
-    ang_rotacao = 5 # graus
     if estado.direcao not in ("mais", "menos"):
         return
     direcao = 1 if estado.direcao == "mais" else -1
 
     if estado.tipo == 'translacao':
-        deslocamento = direcao * passo
+        deslocamento = direcao * 0.2 #undidades
         if estado.eixo == 'eixo_x': estado.posicao[0] += deslocamento
         if estado.eixo == 'eixo_y': estado.posicao[1] += deslocamento
         if estado.eixo == 'eixo_z': estado.posicao[2] += deslocamento
-        print(estado.posicao)
     elif estado.tipo == 'rotacao':
-        angulo = direcao * ang_rotacao
+        angulo = direcao * 5 # graus
         if estado.eixo == 'eixo_x': estado.rotacao[0] += angulo
         if estado.eixo == 'eixo_y': estado.rotacao[1] += angulo
         if estado.eixo == 'eixo_z': estado.rotacao[2] += angulo
@@ -197,8 +194,6 @@ def render_3d_to_texture(estado, fbo):
         gluLookAt(8, 0, 0, 0, 0, 0, 0, 1, 0)  # Side view
     elif estado.camera_angle == 'diagonal':
         gluLookAt(5, 5, 5, 0, 0, 0, 0, 1, 0)  # Diagonal view
-    else:
-        gluLookAt(0, 0, 8, 0, 0, 0, 0, 1, 0)  # Default front
 
     update_light(estado)
 

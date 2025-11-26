@@ -239,7 +239,7 @@ def desenhar_hud(gui_surface, font_small, font_tiny, estado):
     for idx, (label, value) in enumerate(info_items):
         x = margin + idx * col_width + 10
         label_surf = font_tiny.render(label + ":", True, COLOR_SCHEME['text_light'])
-        value_surf = font_tiny.render(str(value), True, COLOR_SCHEME['accent'])
+        value_surf = font_tiny.render("[" + ", ".join(f"{v:.2f}" for v in value) + "]",True,COLOR_SCHEME['accent'])
         gui_surface.blit(label_surf, (x, y))
         gui_surface.blit(value_surf, (x, y + 14))
 
@@ -363,16 +363,12 @@ def run_3d_window(cmd_queue, state_queue=None):
                             aplica_transformacao(estado)
                             if estado.tipo == 'translacao':
                                 cmd_queue.put({'type': 'translacao','value': estado.posicao})
-
                             elif estado.tipo == 'rotacao':
                                 cmd_queue.put({'type': 'rotacao','value': estado.rotacao})
-
                             elif estado.tipo == 'escala':
                                 cmd_queue.put({'type': 'escala','value': estado.escala})
-                            #estado.tipo = estado.eixo = estado.direcao = None
                     elif cmd['value'] == 'reseta':
                         estado.reset_transformacoes()
-                        #aplica_transformacao(estado)
         except mp.queues.Empty:
             pass
 
@@ -484,6 +480,7 @@ def run_gui_window(cmd_queue, state_queue=None):
                                 cmd_queue.put({'type': 'direcao_tg', 'value': acao})
                             elif acao == "aplica":
                                 if estado.tipo and estado.eixo and estado.direcao:
+                                    aplica_transformacao(estado)
                                     cmd_queue.put({'type': 'transformacao', 'value': acao})
                             elif acao == "reseta":
                                 estado.reset_transformacoes()
