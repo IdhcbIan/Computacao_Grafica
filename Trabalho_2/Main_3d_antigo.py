@@ -489,10 +489,10 @@ def run_gui_window(cmd_queue, state_queue=None):
                                 running = False
                                 cmd_queue.put({'type': 'quit'})
                                 break
-                            elif event.type == MOUSEBUTTONUP:
-                                if event.button == 1:
-                                    mouse_held_button = None
-                                    mouse_hold_started = False
+            elif event.type == MOUSEBUTTONUP:
+                if event.button == 1:
+                    mouse_held_button = None
+                    mouse_hold_started = False
 
         # Handle mouse button hold-and-repeat for light controls
         if mouse_held_button:
