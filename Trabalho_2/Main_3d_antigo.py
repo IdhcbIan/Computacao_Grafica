@@ -42,7 +42,7 @@ def create_buttons():
     # Shape selector buttons
     y_start = 45
     btn_w = (width - 3 * 8) // 4
-    btn_h = 40
+    btn_h = 30
     spacing = 8
     buttons.extend([
         {"texto": "Sphere", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "sphere", "tipo": "shape"},
@@ -52,8 +52,8 @@ def create_buttons():
     ])
 
     # Camera angle buttons
-    y_start = 120
-    btn_h = 38
+    y_start = 105
+    btn_h = 30
     buttons.extend([
         {"texto": "Front", "rect": pygame.Rect(margin, y_start, btn_w, btn_h), "acao": "front", "tipo": "camera"},
         {"texto": "Top", "rect": pygame.Rect(margin + btn_w + spacing, y_start, btn_w, btn_h), "acao": "top", "tipo": "camera"},
@@ -62,8 +62,8 @@ def create_buttons():
     ])
 
     # Lighting model buttons
-    y_start = 190
-    btn_h = 38
+    y_start = 165
+    btn_h = 30
     btn_w_light = (width - 2 * spacing) // 3
     buttons.extend([
         {"texto": "Flat", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "flat", "tipo": "lighting"},
@@ -72,8 +72,8 @@ def create_buttons():
     ])
 
     # Material color buttons
-    y_start = 260
-    swatch_size = 50
+    y_start = 220
+    swatch_size = 40
     swatch_spacing = (width - 3 * swatch_size) // 4
     buttons.extend([
         {"texto": "", "rect": pygame.Rect(margin + swatch_spacing, y_start, swatch_size, swatch_size), "acao": "orange", "cor": (255, 127, 0)},
@@ -82,8 +82,8 @@ def create_buttons():
     ])
 
     # Tipo de projeção
-    y_start = 340
-    btn_h = 38
+    y_start = 285
+    btn_h = 30
     btn_w_light = (width - spacing) // 2
     buttons.extend([
         {"texto": "Perspectiva", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "perspectiva", "tipo": "proj"},
@@ -91,8 +91,8 @@ def create_buttons():
     ])
 
     # Tranformações geométricas
-    y_start = 410
-    btn_h = 38
+    y_start = 340
+    btn_h = 30
     btn_w_light = (width - 2 * spacing) // 3
     buttons.extend([
         {"texto": "Translação", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "translacao", "tipo": "tipo_tg"},
@@ -101,8 +101,8 @@ def create_buttons():
     ])
 
     # Eixos e 'orientação' das tranformações geométricas
-    y_start = 455
-    btn_h = 38
+    y_start = 378
+    btn_h = 30
     btn_w_light = (width - 5 * spacing) // 6
     buttons.extend([
         {"texto": "X", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "eixo_x", "tipo": "eixo_tg"},
@@ -113,8 +113,8 @@ def create_buttons():
     ])
 
     # Aplicar transformacao
-    y_start = 500
-    btn_h = 38
+    y_start = 416
+    btn_h = 30
     btn_w_light = (width - spacing) // 2
     buttons.extend([
         {"texto": "Aplicar", "rect": pygame.Rect(margin, y_start, btn_w_light, btn_h), "acao": "aplica", "tipo": "transformacao"},
@@ -122,10 +122,10 @@ def create_buttons():
     ])
 
     # Light control
-    y_start = 575
-    btn_size = 45
+    y_start = 475
+    btn_size = 35
     center_x = margin + width // 2
-    spacing_light = 12
+    spacing_light = 10
     buttons.extend([
         {"texto": "↑", "rect": pygame.Rect(center_x - btn_size // 2, y_start, btn_size, btn_size), "acao": "light_up", "tipo": "light"},
         {"texto": "←", "rect": pygame.Rect(center_x - btn_size - spacing_light, y_start + btn_size + spacing_light, btn_size, btn_size), "acao": "light_left", "tipo": "light"},
@@ -134,8 +134,8 @@ def create_buttons():
     ])
 
     # Action buttons
-    y_start = ALTURA_JANELA - 95
-    btn_h = 40
+    y_start = 615
+    btn_h = 32
     buttons.extend([
         {"texto": "Quit", "rect": pygame.Rect(margin, y_start, width, btn_h), "acao": "quit", "tipo": "action"},
     ])
@@ -165,14 +165,14 @@ def desenhar_botoes(gui_surface, font, font_small, font_tiny, estado_atual):
 
     gui_surface.fill(COLOR_SCHEME['bg'])
 
-    # Section headers - new positions for wider layout
+    # Section headers - compact layout
     draw_section_header(gui_surface, font_tiny, "OBJETO", 20)
-    draw_section_header(gui_surface, font_tiny, "POSIÇÃO DA CAMERA", 95)
-    draw_section_header(gui_surface, font_tiny, "MODELO DE ILUMINAÇÃO", 165)
-    draw_section_header(gui_surface, font_tiny, "COR", 235)
-    draw_section_header(gui_surface, font_tiny, "PROJEÇÃO", 315)
-    draw_section_header(gui_surface, font_tiny, "TRANSFORMAÇÃO GEOMÉTRICA", 385)
-    draw_section_header(gui_surface, font_tiny, "POSIÇÃO DA FONTE DE LUZ", 550)
+    draw_section_header(gui_surface, font_tiny, "POSIÇÃO DA CAMERA", 80)
+    draw_section_header(gui_surface, font_tiny, "MODELO DE ILUMINAÇÃO", 140)
+    draw_section_header(gui_surface, font_tiny, "COR", 200)
+    draw_section_header(gui_surface, font_tiny, "PROJEÇÃO", 265)
+    draw_section_header(gui_surface, font_tiny, "TRANSFORMAÇÃO GEOMÉTRICA", 320)
+    draw_section_header(gui_surface, font_tiny, "POSIÇÃO DA FONTE DE LUZ", 455)
 
     # Draw buttons
     for botao in BOTOES_3D:
@@ -221,7 +221,7 @@ def desenhar_botoes(gui_surface, font, font_small, font_tiny, estado_atual):
 def desenhar_hud(gui_surface, font_small, font_tiny, estado):
     margin = MARGEM
     width = LARGURA_GUI - 2 * margin
-    info_rect = pygame.Rect(margin, ALTURA_JANELA - 50, width, 38)
+    info_rect = pygame.Rect(margin, 655, width, 38)
 
     # Panel styling
     pygame.draw.rect(gui_surface, COLOR_SCHEME['panel_alt'], info_rect, border_radius=8)
